@@ -143,6 +143,179 @@ export type Database = {
           },
         ]
       }
+      delivery_riders: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
+      doctors: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          license_number: string | null
+          phone: string | null
+          specialization: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id?: string
+          license_number?: string | null
+          phone?: string | null
+          specialization?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          license_number?: string | null
+          phone?: string | null
+          specialization?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      kiosk_partners: {
+        Row: {
+          business_name: string
+          created_at: string | null
+          id: string
+          location: string
+          owner_name: string
+          phone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          business_name: string
+          created_at?: string | null
+          id?: string
+          location: string
+          owner_name: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          business_name?: string
+          created_at?: string | null
+          id?: string
+          location?: string
+          owner_name?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          delivery_address: string | null
+          delivery_rider_id: string | null
+          delivery_type: string | null
+          id: string
+          patient_id: string | null
+          prescription_id: string | null
+          status: string | null
+          total_amount: number | null
+          updated_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_rider_id?: string | null
+          delivery_type?: string | null
+          id?: string
+          patient_id?: string | null
+          prescription_id?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivery_address?: string | null
+          delivery_rider_id?: string | null
+          delivery_type?: string | null
+          id?: string
+          patient_id?: string | null
+          prescription_id?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_delivery_rider_id_fkey"
+            columns: ["delivery_rider_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           age: number | null
@@ -184,6 +357,74 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      prescriptions: {
+        Row: {
+          consultation_id: string | null
+          created_at: string | null
+          doctor_id: string | null
+          id: string
+          medication_list: Json
+          notes: string | null
+          patient_id: string | null
+          status: string | null
+          updated_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          consultation_id?: string | null
+          created_at?: string | null
+          doctor_id?: string | null
+          id?: string
+          medication_list: Json
+          notes?: string | null
+          patient_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          consultation_id?: string | null
+          created_at?: string | null
+          doctor_id?: string | null
+          id?: string
+          medication_list?: Json
+          notes?: string | null
+          patient_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "consultations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -233,6 +474,48 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vendors: {
+        Row: {
+          created_at: string | null
+          id: string
+          latitude: number | null
+          location: string
+          longitude: number | null
+          owner_name: string
+          pharmacy_name: string
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          latitude?: number | null
+          location: string
+          longitude?: number | null
+          owner_name: string
+          pharmacy_name: string
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          latitude?: number | null
+          location?: string
+          longitude?: number | null
+          owner_name?: string
+          pharmacy_name?: string
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
