@@ -8,38 +8,38 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* HC4A Brand Colors - Healthcare blues and greens */
+    /* HealthKiosk NG Brand Colors - Teal/Cyan to Green */
     --background: 0 0% 100%;
-    --foreground: 210 17% 15%;
+    --foreground: 215 20% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 17% 15%;
+    --card-foreground: 215 20% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 17% 15%;
+    --popover-foreground: 215 20% 20%;
 
-    /* Primary: Healthcare teal/cyan - inspired by HC4A branding */
-    --primary: 188 94% 43%;
+    /* Primary: Teal/Cyan - matching reference design */
+    --primary: 184 77% 45%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Soft green for healthcare feel */
-    --secondary: 142 76% 36%;
+    /* Secondary: Healthcare Green */
+    --secondary: 158 64% 52%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted: Light backgrounds */
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted: Very light blue-gray backgrounds */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    /* Accent: Healthcare green */
-    --accent: 142 76% 36%;
+    /* Accent: Matching secondary green */
+    --accent: 158 64% 52%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 188 94% 43%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 184 77% 45%;
 
     --radius: 0.75rem;
     
