@@ -42,25 +42,27 @@ const Home = () => {
         </div>
       </section>
 
-      {/* How It Works - Simple 3-Column */}
+      {/* How It Works - Horizontal */}
       <section className="py-12 px-4 bg-white">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-foreground">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 flex items-center justify-center mb-3">
+          <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-8 max-w-4xl mx-auto">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center justify-center w-16 h-16 flex-shrink-0">
                 <Activity className="h-12 w-12 text-primary" />
               </div>
               <h3 className="font-semibold text-foreground text-base md:text-lg">Find a Kiosk</h3>
             </div>
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 flex items-center justify-center mb-3">
+            <div className="hidden md:block text-muted-foreground">→</div>
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center justify-center w-16 h-16 flex-shrink-0">
                 <Video className="h-12 w-12 text-secondary" />
               </div>
               <h3 className="font-semibold text-foreground text-base md:text-lg">Connect to a Doctor</h3>
             </div>
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 flex items-center justify-center mb-3">
+            <div className="hidden md:block text-muted-foreground">→</div>
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center justify-center w-16 h-16 flex-shrink-0">
                 <FileText className="h-12 w-12 text-secondary" />
               </div>
               <h3 className="font-semibold text-foreground text-base md:text-lg">Get Care</h3>

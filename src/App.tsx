@@ -11,6 +11,11 @@ import Video from "./pages/Video";
 import Appointments from "./pages/Appointments";
 import Patients from "./pages/Patients";
 import DoctorPortal from "./pages/DoctorPortal";
+import VendorPortal from "./pages/VendorPortal";
+import DeliveryPortal from "./pages/DeliveryPortal";
+import KioskPortal from "./pages/KioskPortal";
+import HealthEducation from "./pages/HealthEducation";
+import Insurance from "./pages/Insurance";
 import Login from "./pages/Login";
 import Records from "./pages/Records";
 import NotFound from "./pages/NotFound";
@@ -32,6 +37,11 @@ const App = () => (
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/patients" element={<Patients />} />
           <Route path="/doctor-portal" element={<DoctorPortal />} />
+          <Route path="/vendor-portal" element={<VendorPortal />} />
+          <Route path="/delivery-portal" element={<DeliveryPortal />} />
+          <Route path="/kiosk-portal" element={<KioskPortal />} />
+          <Route path="/health-education" element={<HealthEducation />} />
+          <Route path="/insurance" element={<Insurance />} />
           <Route path="/login" element={<Login />} />
           <Route path="/records" element={<Records />} />
           <Route path="*" element={<NotFound />} />
