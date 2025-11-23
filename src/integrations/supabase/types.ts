@@ -95,7 +95,9 @@ export type Database = {
       }
       consultations: {
         Row: {
+          ai_handoff_reason: string | null
           ai_triage_result: Json | null
+          chat_transcript: Json | null
           created_at: string | null
           diagnosis: string | null
           doctor_id: string | null
@@ -108,7 +110,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_handoff_reason?: string | null
           ai_triage_result?: Json | null
+          chat_transcript?: Json | null
           created_at?: string | null
           diagnosis?: string | null
           doctor_id?: string | null
@@ -121,7 +125,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_handoff_reason?: string | null
           ai_triage_result?: Json | null
+          chat_transcript?: Json | null
           created_at?: string | null
           diagnosis?: string | null
           doctor_id?: string | null
@@ -562,6 +568,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_doctor_by_specialty: {
+        Args: { consultation_id: string; required_specialty: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
