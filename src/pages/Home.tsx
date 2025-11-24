@@ -32,9 +32,8 @@ const Home = () => {
             </Button>
             <Button 
               size="lg" 
-              variant="outline"
               onClick={() => navigate("/login")}
-              className="w-full border-2 border-white text-white hover:bg-white/10 font-semibold text-base py-6"
+              className="w-full bg-secondary hover:bg-secondary/90 text-white font-semibold text-base py-6 shadow-lg"
             >
               Register / Login
             </Button>
@@ -46,26 +45,26 @@ const Home = () => {
       <section className="py-12 px-4 bg-white">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-foreground">How It Works</h2>
-          <div className="flex flex-col md:flex-row justify-center items-center gap-6 md:gap-8 max-w-4xl mx-auto">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="flex items-center justify-center w-16 h-16 flex-shrink-0">
-                <Activity className="h-12 w-12 text-primary" />
+          <div className="flex flex-row justify-center items-center gap-4 md:gap-8 max-w-5xl mx-auto flex-wrap">
+            <div className="flex items-center gap-3 min-w-[200px]">
+              <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 flex-shrink-0 bg-primary/10 rounded-full">
+                <Activity className="h-8 w-8 md:h-12 md:w-12 text-primary" />
               </div>
-              <h3 className="font-semibold text-foreground text-base md:text-lg">Find a Kiosk</h3>
+              <h3 className="font-semibold text-foreground text-sm md:text-lg">Find a Kiosk</h3>
             </div>
-            <div className="hidden md:block text-muted-foreground">→</div>
-            <div className="flex items-center gap-4 flex-1">
-              <div className="flex items-center justify-center w-16 h-16 flex-shrink-0">
-                <Video className="h-12 w-12 text-secondary" />
+            <div className="hidden md:block text-primary text-2xl">→</div>
+            <div className="flex items-center gap-3 min-w-[200px]">
+              <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 flex-shrink-0 bg-secondary/10 rounded-full">
+                <Video className="h-8 w-8 md:h-12 md:w-12 text-secondary" />
               </div>
-              <h3 className="font-semibold text-foreground text-base md:text-lg">Connect to a Doctor</h3>
+              <h3 className="font-semibold text-foreground text-sm md:text-lg">Connect to Doctor</h3>
             </div>
-            <div className="hidden md:block text-muted-foreground">→</div>
-            <div className="flex items-center gap-4 flex-1">
-              <div className="flex items-center justify-center w-16 h-16 flex-shrink-0">
-                <FileText className="h-12 w-12 text-secondary" />
+            <div className="hidden md:block text-primary text-2xl">→</div>
+            <div className="flex items-center gap-3 min-w-[200px]">
+              <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 flex-shrink-0 bg-secondary/10 rounded-full">
+                <FileText className="h-8 w-8 md:h-12 md:w-12 text-secondary" />
               </div>
-              <h3 className="font-semibold text-foreground text-base md:text-lg">Get Care</h3>
+              <h3 className="font-semibold text-foreground text-sm md:text-lg">Get Care</h3>
             </div>
           </div>
         </div>
@@ -77,42 +76,54 @@ const Home = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-foreground">What we Offer</h2>
           <div className="grid gap-4">
             <Card 
-              className="cursor-pointer hover:shadow-md transition-all bg-white border-border" 
-              onClick={() => navigate("/triage")}
+              className="cursor-pointer hover:shadow-lg transition-all bg-card border-border hover:border-primary" 
+              onClick={() => navigate("/find-kiosk")}
             >
               <CardContent className="flex items-center gap-4 p-5">
                 <Activity className="h-10 w-10 text-primary flex-shrink-0" />
-                <h3 className="font-semibold text-foreground text-lg">Symptom Checker</h3>
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg">Find a Kiosk</h3>
+                  <p className="text-sm text-muted-foreground">Locate nearest healthcare kiosk</p>
+                </div>
               </CardContent>
             </Card>
             
             <Card 
-              className="cursor-pointer hover:shadow-md transition-all bg-white border-border" 
-              onClick={() => navigate("/video")}
+              className="cursor-pointer hover:shadow-lg transition-all bg-card border-border hover:border-primary" 
+              onClick={() => navigate("/triage")}
             >
               <CardContent className="flex items-center gap-4 p-5">
                 <Video className="h-10 w-10 text-primary flex-shrink-0" />
-                <h3 className="font-semibold text-foreground text-lg">Virtual Consultation</h3>
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg">Connect to Doctor</h3>
+                  <p className="text-sm text-muted-foreground">Chat with AI or speak to a doctor</p>
+                </div>
               </CardContent>
             </Card>
             
             <Card 
-              className="cursor-pointer hover:shadow-md transition-all bg-white border-border" 
+              className="cursor-pointer hover:shadow-lg transition-all bg-card border-border hover:border-primary" 
               onClick={() => navigate("/appointments")}
             >
               <CardContent className="flex items-center gap-4 p-5">
                 <Calendar className="h-10 w-10 text-primary flex-shrink-0" />
-                <h3 className="font-semibold text-foreground text-lg">Book a Session</h3>
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg">Get Care</h3>
+                  <p className="text-sm text-muted-foreground">Book appointments and consultations</p>
+                </div>
               </CardContent>
             </Card>
             
             <Card 
-              className="cursor-pointer hover:shadow-md transition-all bg-white border-border" 
+              className="cursor-pointer hover:shadow-lg transition-all bg-card border-border hover:border-primary" 
               onClick={() => navigate("/records")}
             >
               <CardContent className="flex items-center gap-4 p-5">
                 <FileText className="h-10 w-10 text-primary flex-shrink-0" />
-                <h3 className="font-semibold text-foreground text-lg">Health Records</h3>
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg">Health Records</h3>
+                  <p className="text-sm text-muted-foreground">Access your medical history</p>
+                </div>
               </CardContent>
             </Card>
           </div>
