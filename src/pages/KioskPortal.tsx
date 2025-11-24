@@ -57,7 +57,7 @@ const KioskPortal = () => {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
+          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary" onClick={() => navigate("/vitals")}>
             <CardContent className="p-8 text-center">
               <Activity className="h-16 w-16 text-secondary mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Record Vitals</h3>
