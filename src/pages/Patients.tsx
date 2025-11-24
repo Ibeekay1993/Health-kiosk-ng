@@ -3,46 +3,84 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { Search, Filter, UserPlus, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const Patients = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [patients, setPatients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const patients = [
-    {
-      id: "P001",
-      name: "Chukwuemeka Obi",
-      age: 34,
-      lastVisit: "2025-11-18",
-      condition: "Hypertension",
-      status: "Active"
-    },
-    {
-      id: "P002",
-      name: "Amina Mohammed",
-      age: 28,
-      lastVisit: "2025-11-17",
-      condition: "Diabetes Type 2",
-      status: "Active"
-    },
-    {
-      id: "P003",
-      name: "Tunde Adeyemi",
-      age: 45,
-      lastVisit: "2025-11-15",
-      condition: "Asthma",
-      status: "Follow-up"
-    },
-    {
-      id: "P004",
-      name: "Blessing Okoro",
-      age: 31,
-      lastVisit: "2025-11-14",
-      condition: "Migraine",
-      status: "Active"
+  useEffect(() => {
+    checkAccess();
+  }, []);
+
+  const checkAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      navigate("/login");
+      return;
     }
-  ];
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!roles || (roles.role !== "admin" && roles.role !== "doctor")) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to view this page.",
+        variant: "destructive",
+      });
+      navigate("/");
+      return;
+    }
+
+    setUserRole(roles.role);
+    fetchPatients(user.id, roles.role);
+  };
+
+  const fetchPatients = async (userId: string, role: string) => {
+    setLoading(true);
+    try {
+      let query = supabase.from("patients").select("*");
+
+      // If doctor, only show assigned patients
+      if (role === "doctor") {
+        const { data: consultations } = await supabase
+          .from("consultations")
+          .select("patient_id")
+          .eq("doctor_id", userId);
+
+        if (consultations) {
+          const patientIds = consultations.map(c => c.patient_id);
+          query = query.in("id", patientIds);
+        }
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setPatients(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -55,17 +93,27 @@ const Patients = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <p>Loading patients...</p>
+      </div>
+    );
+  }
+
+  const filteredPatients = patients.filter(p =>
+    p.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Patient Management</h1>
-          <p className="text-muted-foreground">View and manage patient records</p>
+          <p className="text-muted-foreground">
+            {userRole === "doctor" ? "Your assigned patients" : "All registered patients"}
+          </p>
         </div>
-        <Button className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Add Patient
-        </Button>
       </div>
 
       <Card>
@@ -74,53 +122,54 @@ const Patients = () => {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search patients by name or ID..."
+                placeholder="Search patients by name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Patient ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Age</TableHead>
-                <TableHead>Last Visit</TableHead>
-                <TableHead>Condition</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {patients.map((patient) => (
-                <TableRow key={patient.id}>
-                  <TableCell className="font-medium">{patient.id}</TableCell>
-                  <TableCell>{patient.name}</TableCell>
-                  <TableCell>{patient.age}</TableCell>
-                  <TableCell>{patient.lastVisit}</TableCell>
-                  <TableCell>{patient.condition}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={getStatusColor(patient.status)}>
-                      {patient.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      View Details
-                    </Button>
-                  </TableCell>
+          {filteredPatients.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No patients found</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Age</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredPatients.map((patient) => (
+                  <TableRow key={patient.id}>
+                    <TableCell className="font-medium">{patient.full_name}</TableCell>
+                    <TableCell>{patient.age || "N/A"}</TableCell>
+                    <TableCell>{patient.phone}</TableCell>
+                    <TableCell>{patient.location || "N/A"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getStatusColor(patient.status)}>
+                        {patient.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/records`)}>
+                        View Records
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 

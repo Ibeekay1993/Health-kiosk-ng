@@ -17,7 +17,9 @@ import KioskPortal from "./pages/KioskPortal";
 import HealthEducation from "./pages/HealthEducation";
 import Insurance from "./pages/Insurance";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Records from "./pages/Records";
+import Vitals from "./pages/Vitals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,7 +45,9 @@ const App = () => (
           <Route path="/health-education" element={<HealthEducation />} />
           <Route path="/insurance" element={<Insurance />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/records" element={<Records />} />
+          <Route path="/vitals" element={<Vitals />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
