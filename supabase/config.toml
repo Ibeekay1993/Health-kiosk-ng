@@ -1,1 +1,7 @@
 project_id = "bdieiyayuqwgfyimevwo"
+
+[functions.ai-triage]
+verify_jwt = false
+
+[functions.ai-doctor-handoff]
+verify_jwt = false
