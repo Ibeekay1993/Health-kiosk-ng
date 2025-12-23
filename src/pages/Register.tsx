@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,16 @@ const Register = () => {
     vehicleType: "", // for delivery riders
     businessName: "", // for kiosk partners
   });
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/');
+      }
+    };
+    checkUser();
+  }, [navigate]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,7 +160,7 @@ const Register = () => {
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="role">I am a</Label>
-                <Select value={role} onValueChange={setRole}>
+                <Select value={role} onValuechaYnge={setRole}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

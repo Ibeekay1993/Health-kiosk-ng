@@ -1,8 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 import { Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Subscription = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkUser();
+  }, []);
+
+  const handleGetStarted = () => {
+    navigate('/register');
+  };
+
   const plans = [
     {
       name: "PayG (Local GP) NGN",
@@ -73,7 +91,9 @@ const Subscription = () => {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full mt-auto">Get started</Button>
+                {!isLoggedIn && (
+                  <Button className="w-full mt-auto" onClick={handleGetStarted}>Get started</Button>
+                )}
               </CardContent>
             </Card>
           ))}
