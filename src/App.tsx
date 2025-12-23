@@ -33,6 +33,7 @@ import LaboratoryRequests from "./pages/LaboratoryRequests";
 import Subscription from "./pages/Subscription";
 import FamilyMembers from "./pages/FamilyMembers";
 import CompleteProfile from "./pages/CompleteProfile";
+import BookAppointment from "./pages/BookAppointment";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/doctors" element={<ProtectedRoute><Doctors /></ProtectedRoute>} />
+          <Route path="/book-appointment" element={<ProtectedRoute><BookAppointment /></ProtectedRoute>} />
           <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
           <Route path="/medical-records" element={<ProtectedRoute><MedicalRecords /></ProtectedRoute>} />
           <Route path="/laboratory-requests" element={<ProtectedRoute><LaboratoryRequests /></ProtectedRoute>} />

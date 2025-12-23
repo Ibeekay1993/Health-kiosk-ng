@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const Appointments = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-8">Appointments</h1>
@@ -11,7 +14,7 @@ const Appointments = () => {
         </CardHeader>
         <CardContent>
           <p className="mb-4">Select a doctor and a time that works for you.</p>
-          <Button>View Available Doctors</Button>
+          <Button onClick={() => navigate("/book-appointment")}>Book an Appointment</Button>
         </CardContent>
       </Card>
       
