@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,15 +8,15 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Stethoscope } from "lucide-react";
+import { User } from "@supabase/supabase-js";
 
-const Register = () => {
+const CompleteProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string>("patient");
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
     fullName: "",
     phone: "",
     location: "",
@@ -27,106 +27,91 @@ const Register = () => {
     businessName: "", // for kiosk partners
   });
 
-  const handleRegister = async (e: React.FormEvent) => {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/login");
+      } else {
+        setUser(session.user);
+      }
+    });
+  }, [navigate]);
+
+  const handleCompleteProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    if (!user) return;
+
     try {
-      // Sign up user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
+      // Create user role
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({ user_id: user.id, role: role as any });
 
-      if (authError) throw authError;
+      if (roleError) throw roleError;
 
-      if (authData.user) {
-        // Create user role
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .insert({ user_id: authData.user.id, role: role as any });
-
-        if (roleError) throw roleError;
-
-        // Create role-specific profile
-        if (role === "patient") {
-          const { error } = await supabase.from("patients").insert({
-            user_id: authData.user.id,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            location: formData.location,
-          });
-          if (error) throw error;
-        } else if (role === "doctor") {
-          const { error } = await supabase.from("doctors").insert({
-            user_id: authData.user.id,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            specialization: formData.specialization,
-            license_number: formData.licenseNumber,
-          });
-          if (error) throw error;
-        } else if (role === "vendor") {
-          const { error } = await supabase.from("vendors").insert({
-            user_id: authData.user.id,
-            pharmacy_name: formData.pharmacyName,
-            owner_name: formData.fullName,
-            phone: formData.phone,
-            location: formData.location,
-          });
-          if (error) throw error;
-        } else if (role === "delivery_rider") {
-          const { error } = await supabase.from("delivery_riders").insert({
-            user_id: authData.user.id,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            vehicle_type: formData.vehicleType,
-          });
-          if (error) throw error;
-        } else if (role === "kiosk_partner") {
-          const { error } = await supabase.from("kiosk_partners").insert({
-            user_id: authData.user.id,
-            business_name: formData.businessName,
-            owner_name: formData.fullName,
-            phone: formData.phone,
-            location: formData.location,
-          });
-          if (error) throw error;
-        }
-
-        toast({
-          title: "Registration Successful",
-          description: "Please check your email to verify your account.",
+      // Create role-specific profile
+      if (role === "patient") {
+        const { error } = await supabase.from("patients").insert({
+          user_id: user.id,
+          full_name: formData.fullName,
+          phone: formData.phone,
+          location: formData.location,
         });
-        
-        navigate("/login");
+        if (error) throw error;
+      } else if (role === "doctor") {
+        const { error } = await supabase.from("doctors").insert({
+          user_id: user.id,
+          full_name: formData.fullName,
+          phone: formData.phone,
+          specialization: formData.specialization,
+          license_number: formData.licenseNumber,
+        });
+        if (error) throw error;
+      } else if (role === "vendor") {
+        const { error } = await supabase.from("vendors").insert({
+          user_id: user.id,
+          pharmacy_name: formData.pharmacyName,
+          owner_name: formData.fullName,
+          phone: formData.phone,
+          location: formData.location,
+        });
+        if (error) throw error;
+      } else if (role === "delivery_rider") {
+        const { error } = await supabase.from("delivery_riders").insert({
+          user_id: user.id,
+          full_name: formData.fullName,
+          phone: formData.phone,
+          vehicle_type: formData.vehicleType,
+        });
+        if (error) throw error;
+      } else if (role === "kiosk_partner") {
+        const { error } = await supabase.from("kiosk_partners").insert({
+          user_id: user.id,
+          business_name: formData.businessName,
+          owner_name: formData.fullName,
+          phone: formData.phone,
+          location: formData.location,
+        });
+        if (error) throw error;
       }
+
+      toast({
+        title: "Profile Completed",
+        description: "Your account is now fully set up.",
+      });
+      
+      navigate("/dashboard");
+
     } catch (error: any) {
       toast({
-        title: "Registration Failed",
+        title: "Profile Completion Failed",
         description: error.message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-      });
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Google Sign-up Failed",
-        description: error.message,
-        variant: "destructive",
-      });
     }
   };
 
@@ -138,16 +123,16 @@ const Register = () => {
             <Stethoscope className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold">HealthKiosk NG</h1>
           </div>
-          <p className="text-muted-foreground">Create your account</p>
+          <p className="text-muted-foreground">Complete your profile</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Register</CardTitle>
-            <CardDescription>Join our healthcare platform</CardDescription>
+            <CardTitle>One Last Step</CardTitle>
+            <CardDescription>Please provide the remaining details to complete your registration.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={handleCompleteProfile} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="role">I am a</Label>
                 <Select value={role} onValueChange={setRole}>
@@ -162,28 +147,6 @@ const Register = () => {
                     <SelectItem value="kiosk_partner">Kiosk Partner</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
               </div>
 
               <div className="space-y-2">
@@ -287,32 +250,9 @@ const Register = () => {
               )}
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creating Account..." : "Register"}
+                {loading ? "Saving..." : "Complete Profile"}
               </Button>
             </form>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
-               <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-5.63 1.9-4.76 0-8.64-3.89-8.64-8.64s3.88-8.64 8.64-8.64c2.69 0 4.33 1.01 5.31 1.94l2.43-2.43C18.4 1.46 15.63 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c7.14 0 11.95-4.99 11.95-12.15 0-.79-.07-1.54-.19-2.28z"></path></svg>
-              Sign up with Google
-            </Button>
-
-            <div className="mt-6 text-center text-sm">
-              Already have an account?{" "}
-              <button onClick={() => navigate("/login")} className="text-primary hover:underline font-medium">
-                Sign in
-              </button>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -320,4 +260,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default CompleteProfile;

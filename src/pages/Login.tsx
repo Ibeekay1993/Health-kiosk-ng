@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,59 +19,31 @@ const Login = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        // User is logged in, redirect based on role
-        redirectBasedOnRole(session.user.id);
+        // User is logged in, redirect to dashboard
+        navigate("/dashboard");
       }
     });
-  }, []);
-
-  const redirectBasedOnRole = async (userId: string) => {
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
-
-    if (roles) {
-      switch (roles.role) {
-        case "doctor":
-          navigate("/doctor-portal");
-          break;
-        case "vendor":
-          navigate("/vendor-portal");
-          break;
-        case "delivery_rider":
-          navigate("/delivery-portal");
-          break;
-        case "kiosk_partner":
-          navigate("/kiosk-portal");
-          break;
-        default:
-          navigate("/");
-      }
-    }
-  };
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
-      if (data.user) {
-        toast({
-          title: "Login Successful",
-          description: "Welcome back!",
-        });
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
         
-        await redirectBasedOnRole(data.user.id);
-      }
+      navigate("/dashboard");
+
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -81,6 +52,27 @@ const Login = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Google Login Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -127,6 +119,22 @@ const Login = () => {
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
+               <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-5.63 1.9-4.76 0-8.64-3.89-8.64-8.64s3.88-8.64 8.64-8.64c2.69 0 4.33 1.01 5.31 1.94l2.43-2.43C18.4 1.46 15.63 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c7.14 0 11.95-4.99 11.95-12.15 0-.79-.07-1.54-.19-2.28z"></path></svg>
+              Sign in with Google
+            </Button>
 
             <div className="mt-6 text-center text-sm">
               <a href="#" className="text-primary hover:underline">

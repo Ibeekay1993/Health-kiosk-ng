@@ -25,6 +25,14 @@ import FindKiosk from "./pages/FindKiosk";
 import Prescriptions from "./pages/Prescriptions";
 import VendorSelection from "./pages/VendorSelection";
 import NotFound from "./pages/NotFound";
+import Dashboard from "./pages/Dashboard";
+import Doctors from "./pages/Doctors";
+import Chats from "./pages/Chats";
+import MedicalRecords from "./pages/MedicalRecords";
+import LaboratoryRequests from "./pages/LaboratoryRequests";
+import Subscription from "./pages/Subscription";
+import FamilyMembers from "./pages/FamilyMembers";
+import CompleteProfile from "./pages/CompleteProfile";
 
 const queryClient = new QueryClient();
 
@@ -42,8 +50,16 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/health-education" element={<HealthEducation />} />
           <Route path="/find-kiosk" element={<FindKiosk />} />
-          
-          {/* Protected patient routes */}
+
+          {/* Protected routes */}
+          <Route path="/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/doctors" element={<ProtectedRoute><Doctors /></ProtectedRoute>} />
+          <Route path="/chats" element={<ProtectedRoute><Chats /></ProtectedRoute>} />
+          <Route path="/medical-records" element={<ProtectedRoute><MedicalRecords /></ProtectedRoute>} />
+          <Route path="/laboratory-requests" element={<ProtectedRoute><LaboratoryRequests /></ProtectedRoute>} />
+          <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+          <Route path="/family-members" element={<ProtectedRoute><FamilyMembers /></ProtectedRoute>} />
           <Route path="/triage" element={
             <ProtectedRoute>
               <Triage />
@@ -84,7 +100,7 @@ const App = () => (
               <Insurance />
             </ProtectedRoute>
           } />
-          
+
           {/* Doctor routes */}
           <Route path="/doctor-portal" element={
             <ProtectedRoute allowedRoles={["doctor", "admin"]}>
@@ -96,21 +112,21 @@ const App = () => (
               <Patients />
             </ProtectedRoute>
           } />
-          
+
           {/* Vendor routes */}
           <Route path="/vendor-portal" element={
             <ProtectedRoute allowedRoles={["vendor", "admin"]}>
               <VendorPortal />
             </ProtectedRoute>
           } />
-          
+
           {/* Delivery routes */}
           <Route path="/delivery-portal" element={
             <ProtectedRoute allowedRoles={["delivery_rider", "admin"]}>
               <DeliveryPortal />
             </ProtectedRoute>
           } />
-          
+
           {/* Kiosk routes */}
           <Route path="/kiosk-portal" element={
             <ProtectedRoute allowedRoles={["kiosk_partner", "admin"]}>
@@ -122,7 +138,7 @@ const App = () => (
               <Vitals />
             </ProtectedRoute>
           } />
-          
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

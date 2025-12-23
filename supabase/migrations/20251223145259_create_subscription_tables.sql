@@ -1,0 +1,21 @@
+CREATE TABLE subscription_plans (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  name TEXT NOT NULL,
+  price NUMERIC(10, 2) NOT NULL,
+  period TEXT NOT NULL,
+  users TEXT NOT NULL,
+  features JSONB NOT NULL,
+  popular BOOLEAN DEFAULT false
+);
+
+CREATE TABLE user_subscriptions (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  plan_id BIGINT NOT NULL REFERENCES subscription_plans(id),
+  start_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  end_date TIMESTAMPTZ,
+  active BOOLEAN NOT NULL DEFAULT true
+);
+
+ALTER TABLE subscription_plans REPLICA IDENTITY FULL;
+ALTER TABLE user_subscriptions REPLICA IDENTITY FULL;

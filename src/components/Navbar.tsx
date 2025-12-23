@@ -54,7 +54,7 @@ const Navbar = () => {
       case "vendor": return "/vendor-portal";
       case "delivery_rider": return "/delivery-portal";
       case "kiosk_partner": return "/kiosk-portal";
-      default: return "/";
+      default: return "/dashboard";
     }
   };
 

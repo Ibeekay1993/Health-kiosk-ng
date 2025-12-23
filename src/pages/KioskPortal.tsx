@@ -53,34 +53,34 @@ const KioskPortal = () => {
               <UserPlus className="h-16 w-16 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Quick Registration</h3>
               <p className="text-muted-foreground mb-4">Register new patient</p>
-              <Button size="lg" className="w-full">Register Patient</Button>
+              <Button size="lg" className="w-full" onClick={() => navigate("/register")}>Register Patient</Button>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary" onClick={() => navigate("/vitals")}>
+          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
             <CardContent className="p-8 text-center">
               <Activity className="h-16 w-16 text-secondary mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Record Vitals</h3>
               <p className="text-muted-foreground mb-4">BP, Temp, SpO₂</p>
-              <Button size="lg" className="w-full" variant="secondary">Record Vitals</Button>
+              <Button size="lg" className="w-full" variant="secondary" onClick={() => navigate("/vitals")}>Record Vitals</Button>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary" onClick={() => navigate("/triage")}>
+          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
             <CardContent className="p-8 text-center">
               <Video className="h-16 w-16 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Start Consultation</h3>
               <p className="text-muted-foreground mb-4">Connect to doctor</p>
-              <Button size="lg" className="w-full">Start Now</Button>
+              <Button size="lg" className="w-full" onClick={() => navigate("/triage")}>Start Now</Button>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary" onClick={() => navigate("/appointments")}>
+          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
             <CardContent className="p-8 text-center">
               <Calendar className="h-16 w-16 text-secondary mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Book Doctor</h3>
               <p className="text-muted-foreground mb-4">Schedule appointment</p>
-              <Button size="lg" className="w-full" variant="secondary">Book Appointment</Button>
+              <Button size="lg" className="w-full" variant="secondary" onClick={() => navigate("/appointments")}>Book Appointment</Button>
             </CardContent>
           </Card>
 
@@ -89,16 +89,16 @@ const KioskPortal = () => {
               <CreditCard className="h-16 w-16 text-primary mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Insurance Payments</h3>
               <p className="text-muted-foreground mb-4">Micro-contributions</p>
-              <Button size="lg" className="w-full">Manage Insurance</Button>
+              <Button size="lg" className="w-full" onClick={() => navigate("/insurance")}>Manage Insurance</Button>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary" onClick={() => navigate("/records")}>
+          <Card className="cursor-pointer hover:shadow-lg transition-all border-2 hover:border-primary">
             <CardContent className="p-8 text-center">
               <FileText className="h-16 w-16 text-secondary mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Patient History</h3>
               <p className="text-muted-foreground mb-4">View medical records</p>
-              <Button size="lg" className="w-full" variant="secondary">View Records</Button>
+              <Button size="lg" className="w-full" variant="secondary" onClick={() => navigate("/records")}>View Records</Button>
             </CardContent>
           </Card>
         </div>
