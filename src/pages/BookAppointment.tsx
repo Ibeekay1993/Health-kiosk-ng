@@ -19,7 +19,11 @@ const BookAppointment = () => {
 
   useEffect(() => {
     const fetchDoctors = async () => {
-      const { data, error } = await supabase.from("doctors").select("id, full_name");
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, full_name')
+        .eq('role', 'doctor');
+
       if (error) {
         toast({ title: "Error fetching doctors", description: error.message, variant: "destructive" });
       } else {
