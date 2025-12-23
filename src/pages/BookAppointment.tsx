@@ -19,10 +19,7 @@ const BookAppointment = () => {
 
   useEffect(() => {
     const fetchDoctors = async () => {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, full_name')
-        .eq('role', 'doctor');
+      const { data, error } = await supabase.rpc('get_doctors');
 
       if (error) {
         toast({ title: "Error fetching doctors", description: error.message, variant: "destructive" });

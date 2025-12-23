@@ -34,6 +34,7 @@ import Subscription from "./pages/Subscription";
 import FamilyMembers from "./pages/FamilyMembers";
 import CompleteProfile from "./pages/CompleteProfile";
 import BookAppointment from "./pages/BookAppointment";
+import SupabaseData from "./pages/SupabaseData"; // Import the new component
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
           <Route path="/laboratory-requests" element={<ProtectedRoute><LaboratoryRequests /></ProtectedRoute>} />
           <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
           <Route path="/family-members" element={<ProtectedRoute><FamilyMembers /></ProtectedRoute>} />
+          <Route path="/supabase-data" element={<ProtectedRoute><SupabaseData /></ProtectedRoute>} /> {/* Add the new route */}
           <Route path="/triage" element={
             <ProtectedRoute>
               <Triage />
