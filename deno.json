@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "dom"]
+  },
+  "include": ["supabase/functions/**/*.ts"],
+  "exclude": ["node_modules", "src"]
+}
