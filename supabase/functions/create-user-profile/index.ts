@@ -1,6 +1,5 @@
-
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +35,6 @@ serve(async (req) => {
 
     let profileData = {};
     let tableName = "";
-    let error;
 
     // Determine the table and data based on the user's role
     switch (role) {
@@ -67,10 +65,11 @@ serve(async (req) => {
         });
     }
 
-    // Insert the data into the correct table
+    // Insert the data into the correct table.
+    // The 'returning: "minimal"' option is not used in this version of the client library.
     const { error: insertError } = await supabaseAdmin
       .from(tableName)
-      .insert(profileData, { returning: "minimal" });
+      .insert(profileData);
 
     if (insertError) {
       throw insertError;
