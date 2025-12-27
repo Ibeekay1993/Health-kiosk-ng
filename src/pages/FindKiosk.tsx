@@ -38,7 +38,6 @@ const FindKiosk = () => {
       setKiosks(data || []);
     } catch (error) {
       console.error("Error fetching kiosks:", error);
-      // Fallback to demo data if no kiosks in database
       setKiosks([
         {
           id: "1",
@@ -125,14 +124,14 @@ const FindKiosk = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-muted/40 p-4 md:p-8">
+    <section className="bg-muted/40 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Find a HealthKiosk Near You</h1>
@@ -204,7 +203,7 @@ const FindKiosk = () => {
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

@@ -1,65 +1,53 @@
-import { Stethoscope, Menu, X } from "lucide-react";
+import { Stethoscope, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { NavLink } from "./NavLink";
 import { Button } from "./ui/button";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 
+const navLinks = [
+  { to: "/", text: "Home" },
+  { to: "/find-kiosk", text: "Find Kiosk" },
+  { to: "/triage", text: "Consultation" },
+];
+
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      }
-    });
+      setLoading(false);
+    };
+
+    getSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      } else {
-        setUserRole(null);
-      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const fetchUserRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
-    
-    if (data) {
-      setUserRole(data.role);
-    }
-  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
-  const getDashboardLink = () => {
-    switch (userRole) {
-      case "doctor": return "/doctor-portal";
-      case "vendor": return "/vendor-portal";
-      case "delivery_rider": return "/delivery-portal";
-      case "kiosk_partner": return "/kiosk-portal";
-      default: return "/dashboard";
-    }
-  };
+  if (loading) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between"></div>
+      </header>
+    );
+  }
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Stethoscope className="h-6 w-6 text-primary" />
@@ -67,52 +55,77 @@ const Navbar = () => {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6">
-          <NavLink to="/">Home</NavLink>
-          {user && <NavLink to={getDashboardLink()}>Dashboard</NavLink>}
-          <NavLink to="/find-kiosk">Find Kiosk</NavLink>
-          <NavLink to="/triage">Consultation</NavLink>
+        <nav className="hidden md:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <NavLink key={link.to} to={link.to}>{link.text}</NavLink>
+          ))}
           {user ? (
             <Button onClick={handleSignOut} variant="outline" size="sm">
-              Sign Out
+              Logout
             </Button>
           ) : (
-            <Button onClick={() => navigate("/login")} size="sm">
-              Login
-            </Button>
+            <>
+              <Button onClick={() => navigate("/login")} variant="ghost" size="sm">
+                Sign In
+              </Button>
+              <Button onClick={() => navigate("/register")} size="sm">
+                Get Started
+              </Button>
+            </>
           )}
-        </div>
+        </nav>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        {/* Mobile Navigation */}
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Open navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <div className="grid gap-4 py-6">
+                <Link to="/" className="flex items-center gap-2 mb-4">
+                  <Stethoscope className="h-6 w-6 text-primary" />
+                  <span className="text-xl font-bold">HealthKiosk NG</span>
+                </Link>
+                {navLinks.map((link) => (
+                  <SheetClose asChild key={link.to}>
+                    <Link
+                      to={link.to}
+                      className="text-lg font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      {link.text}
+                    </Link>
+                  </SheetClose>
+                ))}
+                <div className="mt-6 border-t pt-6">
+                  {user ? (
+                    <Button onClick={handleSignOut} className="w-full">
+                      Logout
+                    </Button>
+                  ) : (
+                    <div className="grid gap-2">
+                      <SheetClose asChild>
+                        <Button onClick={() => navigate("/login")} variant="outline" className="w-full">
+                          Sign In
+                        </Button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Button onClick={() => navigate("/register")} className="w-full">
+                          Get Started
+                        </Button>
+                      </SheetClose>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
-
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <div className="md:hidden border-t bg-background p-4">
-          <div className="flex flex-col gap-4">
-            <NavLink to="/" onClick={() => setIsOpen(false)}>Home</NavLink>
-            {user && <NavLink to={getDashboardLink()} onClick={() => setIsOpen(false)}>Dashboard</NavLink>}
-            <NavLink to="/find-kiosk" onClick={() => setIsOpen(false)}>Find Kiosk</NavLink>
-            <NavLink to="/triage" onClick={() => setIsOpen(false)}>Consultation</NavLink>
-            {user ? (
-              <Button onClick={() => { handleSignOut(); setIsOpen(false); }} variant="outline" size="sm">
-                Sign Out
-              </Button>
-            ) : (
-              <Button onClick={() => { navigate("/login"); setIsOpen(false); }} size="sm">
-                Login
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
-    </nav>
+    </header>
   );
 };
 

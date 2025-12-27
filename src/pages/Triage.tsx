@@ -30,14 +30,8 @@ const Triage = () => {
     });
 
     setTimeout(() => {
-      if (severity === "high") {
-        toast({
-          title: "Urgent Care Recommended",
-          description: "We recommend immediate consultation with a doctor.",
-          variant: "destructive"
-        });
-      }
-      navigate("/chat", { state: { triageData: formData } });
+      const showUrgentCareToast = severity === "high";
+      navigate("/chat", { state: { triageData: formData, showUrgentCareToast } });
     }, 1500);
   };
 

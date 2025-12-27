@@ -3,33 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Calendar, FileText, Heart, MessageCircle, PlusCircle, Settings, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/use-profile";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState("User");
-  const [userInitial, setUserInitial] = useState("U");
+  const { profile, loading } = useProfile();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error("Error fetching user:", error);
-      } else if (data.user) {
-        const fullName = data.user.user_metadata?.full_name || data.user.email;
-        setUserName(fullName.split(" ")[0]);
-        setUserInitial(fullName.charAt(0).toUpperCase());
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  const stats = {
-    consultations: 0,
-    prescriptions: 0,
-  };
+  const userName = profile?.full_name?.split(" ")[0] || "User";
+  const userInitial = profile?.full_name?.charAt(0).toUpperCase() || "U";
 
   return (
     <div className="min-h-screen bg-muted/40 p-4 sm:p-6 md:p-8">
@@ -38,7 +19,7 @@ const Dashboard = () => {
         <aside className="hidden lg:block bg-card p-6 rounded-lg shadow-sm">
           <div className="flex items-center gap-4 mb-8">
             <Avatar>
-              <AvatarImage src="/placeholder-user.jpg" />
+              <AvatarImage src={profile?.avatar_url || "/placeholder-user.jpg"} />
               <AvatarFallback>{userInitial}</AvatarFallback>
             </Avatar>
             <div>
@@ -51,7 +32,6 @@ const Dashboard = () => {
             <Button variant="ghost" className="justify-start gap-3 text-base" onClick={() => navigate('/appointments')}><Calendar className="h-5 w-5" /> Appointments</Button>
             <Button variant="ghost" className="justify-start gap-3 text-base" onClick={() => navigate('/doctors')}><Users className="h-5 w-5" /> Doctors</Button>
             <Button variant="ghost" className="justify-start gap-3 text-base" onClick={() => navigate('/chats')}><MessageCircle className="h-5 w-5" /> Chats</Button>
-            <Button variant="ghost" className="justify-start gap-3 text-base" onClick={() => navigate('/prescriptions')}><FileText className="h-5 w-5" /> Prescription</Button>
             <Button variant="ghost" className="justify-start gap-3 text-base" onClick={() => navigate('/lab-requests')}><PlusCircle className="h-5 w-5" /> Laboratory Requests</Button>
             <Button variant="ghost" className="justify-start gap-3 text-base" onClick={() => navigate('/medical-records')}><FileText className="h-5 w-5" /> Medical Records</Button>
             <Button variant="ghost" className="justify-start gap-3 text-base" onClick={() => navigate('/subscription')}><Settings className="h-5 w-5" /> Subscription</Button>
@@ -69,51 +49,57 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-4">
               <Button variant="outline" size="icon"><Bell className="h-5 w-5" /></Button>
-              <Button onClick={() => navigate('/book-appointment')}>Book an Appointment</Button>
             </div>
           </header>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Consultation & Prescription Cards */}
-            <Card>
+
+            {/* Primary Actions */}
+            <Card className="md:col-span-1 lg:col-span-1 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/triage')}>
               <CardHeader>
-                <CardTitle>Out of consultations</CardTitle>
+                <CardTitle>Start Consultation</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-5xl font-bold">{stats.consultations}</p>
-                <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/subscription')}>Subscribe to a plan &rarr;</Button>
+                <p className="text-muted-foreground">Chat with our AI health assistant to get care now</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="md:col-span-1 lg:col-span-1 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/book-appointment')}>
               <CardHeader>
-                <CardTitle>Total number of prescriptions</CardTitle>
+                <CardTitle>Book Appointment</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-5xl font-bold">{stats.prescriptions}</p>
-                <p className="text-sm text-muted-foreground">ongoing prescription</p>
-                <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/prescriptions')}>View prescription &rarr;</Button>
+                <p className="text-muted-foreground">Schedule a visit with a healthcare professional</p>
               </CardContent>
             </Card>
 
+            <Card className="md:col-span-1 lg:col-span-1 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/find-kiosk')}>
+              <CardHeader>
+                <CardTitle>Find a Kiosk</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Access nearby physical health services</p>
+              </CardContent>
+            </Card>
+            
             {/* Upcoming Appointments */}
-            <Card className="md:col-span-2 lg:col-span-1">
+            <Card className="md:col-span-1 lg:col-span-1">
               <CardHeader>
                 <CardTitle>Upcoming Appointments</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-center text-muted-foreground py-8">No appointments for December 23, 2025</p>
-                {/* Calendar placeholder */}
+                <Button variant="outline" className="w-full" onClick={() => navigate('/book-appointment')}>Book an Appointment</Button>
               </CardContent>
             </Card>
-            
-            {/* Medication Card */}
-            <Card className="md:col-span-1 lg:col-span-2">
+
+            {/* Medical Records Card */}
+            <Card className="md:col-span-1 lg:col-span-2 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/medical-records')}>
               <CardHeader>
-                <CardTitle>Medication</CardTitle>
+                <CardTitle>Medical Records</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-center text-muted-foreground py-8">No medications available. Your prescribed medications will appear here</p>
+                <p className="text-muted-foreground">View your medical history, prescriptions, and test results.</p>
               </CardContent>
             </Card>
 

@@ -24,6 +24,7 @@ const Chat = () => {
   const location = useLocation();
   const { toast } = useToast();
   const triageData = location.state?.triageData;
+  const showUrgentCareToast = location.state?.showUrgentCareToast;
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -41,6 +42,17 @@ const Chat = () => {
   const [consultationId, setConsultationId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showUrgentCareToast) {
+      toast({
+        id: "urgent-care-toast",
+        title: "Urgent Care Recommended",
+        description: "We recommend immediate consultation with a doctor.",
+        variant: "destructive"
+      });
+    }
+  }, [showUrgentCareToast, toast]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -117,7 +129,7 @@ const Chat = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [consultationId]);
+  }, [consultationId, supabase]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -199,6 +211,7 @@ const Chat = () => {
     } catch (error) {
       console.error("Error:", error);
       toast({
+        id: "error-toast",
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to get response. Please try again.",
         variant: "destructive",
@@ -246,6 +259,7 @@ const Chat = () => {
         setMessages((prev) => [...prev, handoffMessage]);
 
         toast({
+          id: "doctor-connected-toast",
           title: "Doctor Connected",
           description: `You've been connected to Dr. ${handoffData.doctorName || "Available"}`,
         });
@@ -265,6 +279,7 @@ const Chat = () => {
 
   const handleConnectDoctor = () => {
     toast({
+      id: "connecting-doctor-toast",
       title: "Connecting to doctor...",
       description: "You will be transferred to a video call shortly.",
     });
@@ -288,9 +303,9 @@ const Chat = () => {
   };
 
   return (
-    <div className="min-h-screen bg-muted/40 p-4">
+    <div id="chat-page" className="min-h-screen bg-muted/40 p-4">
       <div className="max-w-4xl mx-auto">
-        <Card className="h-[80vh] flex flex-col">
+        <Card id="chat-card" className="h-[80vh] flex flex-col">
           <div className="p-4 border-b bg-gradient-to-r from-primary to-secondary text-white rounded-t-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -298,16 +313,16 @@ const Chat = () => {
                   <>
                     <Stethoscope className="h-6 w-6" />
                     <div>
-                      <h2 className="text-lg font-semibold">Dr. {doctorName}</h2>
-                      <p className="text-sm opacity-90">Connected</p>
+                      <h2 id="doctor-name-header" className="text-lg font-semibold">Dr. {doctorName}</h2>
+                      <p id="doctor-status-header" className="text-sm opacity-90">Connected</p>
                     </div>
                   </>
                 ) : (
                   <>
                     <Bot className="h-6 w-6" />
                     <div>
-                      <h2 className="text-lg font-semibold">AI Health Assistant</h2>
-                      <p className="text-sm opacity-90">Online</p>
+                      <h2 id="ai-assistant-header" className="text-lg font-semibold">AI Health Assistant</h2>
+                      <p id="ai-assistant-status" className="text-sm opacity-90">Online</p>
                     </div>
                   </>
                 )}
@@ -315,6 +330,7 @@ const Chat = () => {
               <div className="flex gap-2">
                 {!doctorConnected && (
                   <Button 
+                    id="request-doctor-button"
                     size="sm" 
                     variant="outline" 
                     className="bg-white/10 text-white border-white/30 hover:bg-white/20"
@@ -326,6 +342,7 @@ const Chat = () => {
                 )}
                 {doctorConnected && (
                   <Button 
+                    id="video-call-button"
                     size="sm" 
                     variant="outline" 
                     className="bg-white text-primary hover:bg-white/90" 
@@ -339,10 +356,11 @@ const Chat = () => {
             </div>
           </div>
 
-          <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+          <CardContent id="message-list" className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
+                id={`message-container-${message.id}`}
                 className={`flex ${
                   message.sender === "patient" ? "justify-end" : "justify-start"
                 }`}
@@ -352,7 +370,7 @@ const Chat = () => {
                     message.sender === "patient" ? "flex-row-reverse" : "flex-row"
                   }`}
                 >
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  <div id={`message-avatar-${message.id}`} className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                     message.sender === "patient" ? "bg-primary" : message.sender === "doctor" ? "bg-secondary" : "bg-muted"
                   }`}>
                     {message.sender === "patient" ? (
@@ -364,6 +382,7 @@ const Chat = () => {
                     )}
                   </div>
                   <div
+                    id={`message-content-${message.id}`}
                     className={`rounded-lg p-3 ${
                       message.sender === "patient"
                         ? "bg-primary text-white"
@@ -372,8 +391,8 @@ const Chat = () => {
                         : "bg-muted"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                    <p className={`text-xs mt-1 ${
+                    <p id={`message-text-${message.id}`} className="text-sm whitespace-pre-wrap">{message.text}</p>
+                    <p id={`message-timestamp-${message.id}`} className={`text-xs mt-1 ${
                       message.sender === "patient" || message.sender === "doctor" 
                         ? "text-white/70" 
                         : "text-muted-foreground"
@@ -388,7 +407,7 @@ const Chat = () => {
               </div>
             ))}
             {isLoading && (
-              <div className="flex justify-start">
+              <div id="loading-indicator" className="flex justify-start">
                 <div className="flex gap-3 max-w-[80%]">
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                     <Bot className="h-4 w-4 text-muted-foreground" />
@@ -406,16 +425,17 @@ const Chat = () => {
             <div ref={messagesEndRef} />
           </CardContent>
 
-          <div className="p-4 border-t">
+          <div id="chat-input-container" className="p-4 border-t">
             <div className="flex gap-2">
               <Input
+                id="chat-input"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSend()}
                 placeholder={doctorConnected ? "Message the doctor..." : "Describe your symptoms..."}
                 disabled={isLoading}
               />
-              <Button onClick={handleSend} disabled={isLoading}>
+              <Button id="send-button" onClick={handleSend} disabled={isLoading}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>

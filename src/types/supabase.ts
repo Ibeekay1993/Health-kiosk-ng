@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -24,6 +24,7 @@ export type Database = {
           id: string
           notes: string | null
           patient_id: string | null
+          reason: string | null
           status: string | null
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id?: string | null
+          reason?: string | null
           status?: string | null
         }
         Update: {
@@ -46,17 +48,10 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id?: string | null
+          reason?: string | null
           status?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "appointments_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       chat_messages: {
         Row: {
@@ -108,6 +103,7 @@ export type Database = {
           status: string | null
           symptoms: string | null
           updated_at: string | null
+          video_call_url: string | null
         }
         Insert: {
           ai_handoff_reason?: string | null
@@ -123,6 +119,7 @@ export type Database = {
           status?: string | null
           symptoms?: string | null
           updated_at?: string | null
+          video_call_url?: string | null
         }
         Update: {
           ai_handoff_reason?: string | null
@@ -138,116 +135,97 @@ export type Database = {
           status?: string | null
           symptoms?: string | null
           updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "consultations_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      delivery_riders: {
-        Row: {
-          created_at: string | null
-          full_name: string
-          id: string
-          phone: string | null
-          status: string | null
-          updated_at: string | null
-          user_id: string | null
-          vehicle_type: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          full_name: string
-          id?: string
-          phone?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          vehicle_type?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          full_name?: string
-          id?: string
-          phone?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-          vehicle_type?: string | null
+          video_call_url?: string | null
         }
         Relationships: []
       }
-      doctors: {
+      id_sequences: {
         Row: {
-          created_at: string | null
-          full_name: string
-          id: string
-          license_number: string | null
-          phone: string | null
-          specialization: string | null
-          status: string | null
-          updated_at: string | null
-          user_id: string | null
+          last_value: number
+          role_prefix: string
         }
         Insert: {
-          created_at?: string | null
-          full_name: string
-          id?: string
-          license_number?: string | null
-          phone?: string | null
-          specialization?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
+          last_value?: number
+          role_prefix: string
         }
         Update: {
-          created_at?: string | null
-          full_name?: string
-          id?: string
-          license_number?: string | null
-          phone?: string | null
-          specialization?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
+          last_value?: number
+          role_prefix?: string
         }
         Relationships: []
       }
-      kiosk_partners: {
+      insurance_details: {
         Row: {
-          business_name: string
-          created_at: string | null
-          id: string
-          location: string
-          owner_name: string
-          phone: string | null
-          updated_at: string | null
-          user_id: string | null
+          id: number
+          is_active: boolean | null
+          patient_id: string
+          policy_number: string
+          provider: string
         }
         Insert: {
-          business_name: string
-          created_at?: string | null
-          id?: string
-          location: string
-          owner_name: string
-          phone?: string | null
-          updated_at?: string | null
-          user_id?: string | null
+          id?: number
+          is_active?: boolean | null
+          patient_id: string
+          policy_number: string
+          provider: string
         }
         Update: {
-          business_name?: string
-          created_at?: string | null
-          id?: string
-          location?: string
-          owner_name?: string
-          phone?: string | null
-          updated_at?: string | null
-          user_id?: string | null
+          id?: number
+          is_active?: boolean | null
+          patient_id?: string
+          policy_number?: string
+          provider?: string
+        }
+        Relationships: []
+      }
+      medical_documents: {
+        Row: {
+          document_name: string
+          document_url: string
+          id: number
+          patient_id: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          document_name: string
+          document_url: string
+          id?: number
+          patient_id: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          document_name?: string
+          document_url?: string
+          id?: number
+          patient_id?: string
+          uploaded_at?: string | null
+        }
+        Relationships: []
+      }
+      medical_records: {
+        Row: {
+          created_at: string
+          file_url: string | null
+          id: number
+          record_date: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_url?: string | null
+          id?: number
+          record_date: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_url?: string | null
+          id?: number
+          record_date?: string
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -293,76 +271,13 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orders_delivery_rider_id_fkey"
-            columns: ["delivery_rider_id"]
-            isOneToOne: false
-            referencedRelation: "delivery_riders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "orders_prescription_id_fkey"
             columns: ["prescription_id"]
             isOneToOne: false
             referencedRelation: "prescriptions"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "orders_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["id"]
-          },
         ]
-      }
-      patients: {
-        Row: {
-          age: number | null
-          condition: string | null
-          created_at: string | null
-          full_name: string
-          id: string
-          last_visit: string | null
-          location: string | null
-          medical_history: string | null
-          phone: string | null
-          status: string | null
-          user_id: string | null
-        }
-        Insert: {
-          age?: number | null
-          condition?: string | null
-          created_at?: string | null
-          full_name: string
-          id?: string
-          last_visit?: string | null
-          location?: string | null
-          medical_history?: string | null
-          phone?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          age?: number | null
-          condition?: string | null
-          created_at?: string | null
-          full_name?: string
-          id?: string
-          last_visit?: string | null
-          location?: string | null
-          medical_history?: string | null
-          phone?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
       }
       prescriptions: {
         Row: {
@@ -409,121 +324,123 @@ export type Database = {
             referencedRelation: "consultations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "prescriptions_doctor_id_fkey"
-            columns: ["doctor_id"]
-            isOneToOne: false
-            referencedRelation: "doctors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prescriptions_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prescriptions_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "vendors"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
         Row: {
-          created_at: string | null
+          avatar_url: string | null
+          business_name: string | null
+          email: string
           full_name: string | null
           id: string
+          license_number: string | null
           location: string | null
-          medical_history: string | null
+          pharmacy_name: string | null
           phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          specialization: string | null
           updated_at: string | null
+          user_id: string
+          vehicle_type: string | null
         }
         Insert: {
-          created_at?: string | null
-          full_name?: string | null
-          id: string
-          location?: string | null
-          medical_history?: string | null
-          phone?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
+          avatar_url?: string | null
+          business_name?: string | null
+          email: string
           full_name?: string | null
           id?: string
+          license_number?: string | null
           location?: string | null
-          medical_history?: string | null
+          pharmacy_name?: string | null
           phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          specialization?: string | null
           updated_at?: string | null
+          user_id: string
+          vehicle_type?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          business_name?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          license_number?: string | null
+          location?: string | null
+          pharmacy_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          specialization?: string | null
+          updated_at?: string | null
+          user_id?: string
+          vehicle_type?: string | null
         }
         Relationships: []
       }
-      user_roles: {
+      subscription_plans: {
         Row: {
-          created_at: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
+          features: Json
+          id: number
+          name: string
+          period: string
+          popular: boolean | null
+          price: number
+          users: string
+        }
+        Insert: {
+          features: Json
+          id?: never
+          name: string
+          period: string
+          popular?: boolean | null
+          price: number
+          users: string
+        }
+        Update: {
+          features?: Json
+          id?: never
+          name?: string
+          period?: string
+          popular?: boolean | null
+          price?: number
+          users?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          active: boolean
+          end_date: string | null
+          id: number
+          plan_id: number
+          start_date: string
           user_id: string
         }
         Insert: {
-          created_at?: string | null
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          active?: boolean
+          end_date?: string | null
+          id?: never
+          plan_id: number
+          start_date?: string
           user_id: string
         }
         Update: {
-          created_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          active?: boolean
+          end_date?: string | null
+          id?: never
+          plan_id?: number
+          start_date?: string
           user_id?: string
         }
-        Relationships: []
-      }
-      vendors: {
-        Row: {
-          created_at: string | null
-          id: string
-          latitude: number | null
-          location: string
-          longitude: number | null
-          owner_name: string
-          pharmacy_name: string
-          phone: string | null
-          status: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          latitude?: number | null
-          location: string
-          longitude?: number | null
-          owner_name: string
-          pharmacy_name: string
-          phone?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          latitude?: number | null
-          location?: string
-          longitude?: number | null
-          owner_name?: string
-          pharmacy_name?: string
-          phone?: string | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vitals: {
         Row: {
@@ -553,15 +470,7 @@ export type Database = {
           spo2?: number | null
           temperature?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "vitals_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -571,6 +480,15 @@ export type Database = {
       assign_doctor_by_specialty: {
         Args: { consultation_id: string; required_specialty: string }
         Returns: string
+      }
+      generate_custom_id: { Args: { p_role_prefix: string }; Returns: string }
+      get_doctor_specializations: { Args: never; Returns: string[] }
+      get_doctors: {
+        Args: never
+        Returns: {
+          full_name: string
+          id: string
+        }[]
       }
       has_role: {
         Args: {
@@ -588,6 +506,34 @@ export type Database = {
         | "patient"
         | "vendor"
         | "delivery_rider"
+      doctor_specialization:
+        | "Cardiology"
+        | "Dermatology"
+        | "Endocrinology"
+        | "Gastroenterology"
+        | "General Practice"
+        | "Neurology"
+        | "Oncology"
+        | "Pediatrics"
+        | "Psychiatry"
+        | "Urology"
+        | "Obstetrics and Gynecology"
+        | "Ophthalmology"
+        | "Orthopedics"
+        | "Otolaryngology (ENT)"
+        | "Pulmonology"
+        | "Nephrology"
+        | "Rheumatology"
+        | "Anesthesiology"
+        | "Radiology"
+        | "Emergency Medicine"
+      user_role:
+        | "patient"
+        | "doctor"
+        | "vendor"
+        | "delivery_rider"
+        | "kiosk_partner"
+        | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -722,6 +668,36 @@ export const Constants = {
         "patient",
         "vendor",
         "delivery_rider",
+      ],
+      doctor_specialization: [
+        "Cardiology",
+        "Dermatology",
+        "Endocrinology",
+        "Gastroenterology",
+        "General Practice",
+        "Neurology",
+        "Oncology",
+        "Pediatrics",
+        "Psychiatry",
+        "Urology",
+        "Obstetrics and Gynecology",
+        "Ophthalmology",
+        "Orthopedics",
+        "Otolaryngology (ENT)",
+        "Pulmonology",
+        "Nephrology",
+        "Rheumatology",
+        "Anesthesiology",
+        "Radiology",
+        "Emergency Medicine",
+      ],
+      user_role: [
+        "patient",
+        "doctor",
+        "vendor",
+        "delivery_rider",
+        "kiosk_partner",
+        "admin",
       ],
     },
   },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,18 +8,28 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Stethoscope } from "lucide-react";
+import { nigeriaStates } from "@/lib/nigeria-states";
+
+type Specialization = {
+  name: string;
+};
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<string>("patient");
+  const [specializations, setSpecializations] = useState<Specialization[]>([]);
+  const [registered, setRegistered] = useState(false);
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [lgas, setLgas] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     phone: "",
-    location: "",
+    lga: "",
     specialization: "", // for doctors
     licenseNumber: "", // for doctors
     pharmacyName: "", // for vendors
@@ -28,116 +38,132 @@ const Register = () => {
   });
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/');
+    if (selectedState) {
+      const state = nigeriaStates.find(state => state.state === selectedState);
+      setLgas(state ? state.lgas : []);
+      handleInputChange("lga", ""); // Reset LGA when state changes
+    } else {
+      setLgas([]);
+    }
+  }, [selectedState]);
+
+  useEffect(() => {
+    const fetchSpecializations = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_doctor_specializations' as any);
+        if (error) throw error;
+        if (data && Array.isArray(data)) {
+          setSpecializations(data.map((s: any) => ({ name: s })));
+        } else {
+          throw new Error("Invalid specialization data received");
+        }
+      } catch (error: any) {
+        console.error("Error fetching specializations:", error.message);
+        setSpecializations([
+            { name: "General Medicine" }, { name: "Pediatrics" }, { name: "Cardiology" },
+            { name: "Dermatology" }, { name: "Neurology" }, { name: "Orthopedics" },
+            { name: "Oncology" }, { name: "Gastroenterology" }, { name: "Psychiatry" },
+            { name: "Family Medicine" },
+        ]);
+        toast({
+          title: "Could not fetch specializations",
+          description: "Using a default list. Please try again later.",
+          variant: "destructive"
+        });
       }
     };
-    checkUser();
-  }, [navigate]);
+
+    if (role === 'doctor') {
+      fetchSpecializations();
+    }
+  }, [role, toast]);
+
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    const { 
+        email, password, firstName, lastName, phone, lga,
+        specialization, licenseNumber, pharmacyName, vehicleType, businessName 
+    } = formData;
+    
+    const fullName = `${firstName} ${lastName}`.trim();
+    const location = selectedState && lga ? `${lga}, ${selectedState}` : "";
+
+    if (!email || !password || !firstName || !lastName || !phone || !location) {
+        toast({ title: "Registration Failed", description: "Please fill in all required fields, including state and LGA.", variant: "destructive" });
+        setLoading(false);
+        return;
+    }
+
     try {
-      // Sign up user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
+        const { data: { user }, error: authError } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+              data: {
+                fullName: fullName,
+                phone: phone,
+                location: location,
+                role: role,
+                specialization: specialization,
+                licenseNumber: licenseNumber,
+                pharmacyName: pharmacyName,
+                vehicleType: vehicleType,
+                businessName: businessName,
+              }
+            }
+        });
 
-      if (authError) throw authError;
+        if (authError) throw authError;
+        if (!user) throw new Error("Registration failed, user not created.");
 
-      if (authData.user) {
-        // Create user role
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .insert({ user_id: authData.user.id, role: role as any });
+        setRegistered(true);
+        toast({
+            title: "Registration Successful",
+            description: "Please check your email to confirm your account.",
+        });
 
-        if (roleError) throw roleError;
-
-        // Create role-specific profile
-        if (role === "patient") {
-          const { error } = await supabase.from("patients").insert({
-            user_id: authData.user.id,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            location: formData.location,
-          });
-          if (error) throw error;
-        } else if (role === "doctor") {
-          const { error } = await supabase.from("doctors").insert({
-            user_id: authData.user.id,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            specialization: formData.specialization,
-            license_number: formData.licenseNumber,
-          });
-          if (error) throw error;
-        } else if (role === "vendor") {
-          const { error } = await supabase.from("vendors").insert({
-            user_id: authData.user.id,
-            pharmacy_name: formData.pharmacyName,
-            owner_name: formData.fullName,
-            phone: formData.phone,
-            location: formData.location,
-          });
-          if (error) throw error;
-        } else if (role === "delivery_rider") {
-          const { error } = await supabase.from("delivery_riders").insert({
-            user_id: authData.user.id,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            vehicle_type: formData.vehicleType,
-          });
-          if (error) throw error;
-        } else if (role === "kiosk_partner") {
-          const { error } = await supabase.from("kiosk_partners").insert({
-            user_id: authData.user.id,
-            business_name: formData.businessName,
-            owner_name: formData.fullName,
-            phone: formData.phone,
-            location: formData.location,
-          });
-          if (error) throw error;
+    } catch (error: any) {
+        let errorMessage = error.message || "An unexpected error occurred.";
+        if (error.message && (error.message.includes("Database error saving new user") || error.message.includes("violates check constraint"))) {
+            errorMessage = "A database error occurred. Please ensure all fields are correct and try again.";
         }
 
         toast({
-          title: "Registration Successful",
-          description: "Please check your email to verify your account.",
+            title: "Registration Failed",
+            description: errorMessage,
+            variant: "destructive",
         });
-        
-        navigate("/login");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Registration Failed",
-        description: error.message,
-        variant: "destructive",
-      });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
       });
       if (error) throw error;
     } catch (error: any) {
       toast({
-        title: "Google Sign-up Failed",
+        title: "Google Login Failed",
         description: error.message,
         variant: "destructive",
       });
     }
+  };
+
+  const handleInputChange = (id: string, value: string) => {
+    setFormData(prev => ({ ...prev, [id]: value }));
   };
 
   return (
@@ -148,174 +174,150 @@ const Register = () => {
             <Stethoscope className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold">HealthKiosk NG</h1>
           </div>
-          <p className="text-muted-foreground">Create your account</p>
+          <p className="text-muted-foreground">Create your account to get started</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Register</CardTitle>
-            <CardDescription>Join our healthcare platform</CardDescription>
+            <CardTitle>{registered ? "Check Your Email" : "Register"}</CardTitle>
+            <CardDescription>{registered ? "We've sent a confirmation link to your email." : "Choose your role and fill in your details."}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="role">I am a</Label>
-                <Select value={role} onValuechaYnge={setRole}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="patient">Patient</SelectItem>
-                    <SelectItem value="doctor">Doctor</SelectItem>
-                    <SelectItem value="vendor">Pharmacy/Vendor</SelectItem>
-                    <SelectItem value="delivery_rider">Delivery Rider</SelectItem>
-                    <SelectItem value="kiosk_partner">Kiosk Partner</SelectItem>
-                  </SelectContent>
-                </Select>
+            {registered ? (
+              <div className="space-y-4 text-center">
+                 <p>Your registration was successful! Please check your inbox and click the confirmation link to activate your account.</p>
+                <Button onClick={() => navigate("/login")} className="w-full mt-4">Proceed to Login</Button>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fullName">{role === "vendor" ? "Owner Name" : "Full Name"}</Label>
-                <Input
-                  id="fullName"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-
-              {(role === "patient" || role === "vendor" || role === "kiosk_partner") && (
+            ) : (
+              <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    required
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  />
-                </div>
-              )}
-
-              {role === "doctor" && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="specialization">Specialization</Label>
-                    <Input
-                      id="specialization"
-                      required
-                      value={formData.specialization}
-                      onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="licenseNumber">License Number</Label>
-                    <Input
-                      id="licenseNumber"
-                      required
-                      value={formData.licenseNumber}
-                      onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
-                    />
-                  </div>
-                </>
-              )}
-
-              {role === "vendor" && (
-                <div className="space-y-2">
-                  <Label htmlFor="pharmacyName">Pharmacy Name</Label>
-                  <Input
-                    id="pharmacyName"
-                    required
-                    value={formData.pharmacyName}
-                    onChange={(e) => setFormData({ ...formData, pharmacyName: e.target.value })}
-                  />
-                </div>
-              )}
-
-              {role === "delivery_rider" && (
-                <div className="space-y-2">
-                  <Label htmlFor="vehicleType">Vehicle Type</Label>
-                  <Select
-                    value={formData.vehicleType}
-                    onValueChange={(value) => setFormData({ ...formData, vehicleType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select vehicle type" />
-                    </SelectTrigger>
+                  <Label htmlFor="role">I am a</Label>
+                  <Select value={role} onValueChange={setRole}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                      <SelectItem value="bicycle">Bicycle</SelectItem>
-                      <SelectItem value="car">Car</SelectItem>
-                      <SelectItem value="van">Van</SelectItem>
+                      <SelectItem value="patient">Patient</SelectItem>
+                      <SelectItem value="doctor">Doctor</SelectItem>
+                      <SelectItem value="vendor">Pharmacy/Vendor</SelectItem>
+                      <SelectItem value="delivery_rider">Delivery Rider</SelectItem>
+                      <SelectItem value="kiosk_partner">Kiosk Partner</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              )}
 
-              {role === "kiosk_partner" && (
-                <div className="space-y-2">
-                  <Label htmlFor="businessName">Business Name</Label>
-                  <Input
-                    id="businessName"
-                    required
-                    value={formData.businessName}
-                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                  />
+                <div className="flex gap-4">
+                    <div className="space-y-2 flex-1">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input id="firstName" required value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)} />
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input id="lastName" required value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} />
+                    </div>
                 </div>
-              )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creating Account..." : "Register"}
-              </Button>
-            </form>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" required value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+                </div>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" required value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} />
+                </div>
 
-            <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
-               <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-5.63 1.9-4.76 0-8.64-3.89-8.64-8.64s3.88-8.64 8.64-8.64c2.69 0 4.33 1.01 5.31 1.94l2.43-2.43C18.4 1.46 15.63 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c7.14 0 11.95-4.99 11.95-12.15 0-.79-.07-1.54-.19-2.28z"></path></svg>
-              Sign up with Google
-            </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input id="phone" type="tel" required value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                </div>
+
+                {/* Location fields - now visible for all roles */}
+                <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Select onValueChange={setSelectedState} required>
+                    <SelectTrigger><SelectValue placeholder="Select a state" /></SelectTrigger>
+                    <SelectContent>
+                        {nigeriaStates.map((state) => (<SelectItem key={state.state} value={state.state}>{state.state}</SelectItem>))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                {selectedState && (
+                    <div className="space-y-2">
+                    <Label htmlFor="lga">LGA</Label>
+                    <Select value={formData.lga} onValueChange={(value) => handleInputChange("lga", value)} required>
+                        <SelectTrigger><SelectValue placeholder="Select a LGA" /></SelectTrigger>
+                        <SelectContent>
+                        {lgas.map((lga) => (<SelectItem key={lga} value={lga}>{lga}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
+                    </div>
+                )}
+
+                {role === "doctor" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="specialization">Specialization</Label>
+                      <Select value={formData.specialization} onValueChange={(value) => handleInputChange('specialization', value)} required>
+                        <SelectTrigger><SelectValue placeholder="Select a specialization" /></SelectTrigger>
+                        <SelectContent>
+                          {specializations.map((spec) => (<SelectItem key={spec.name} value={spec.name}>{spec.name}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="licenseNumber">License Number</Label>
+                      <Input id="licenseNumber" required value={formData.licenseNumber} onChange={(e) => handleInputChange('licenseNumber', e.target.value)} />
+                    </div>
+                  </>
+                )}
+
+                {role === "vendor" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="pharmacyName">Pharmacy Name</Label>
+                    <Input id="pharmacyName" required value={formData.pharmacyName} onChange={(e) => handleInputChange('pharmacyName', e.target.value)} />
+                  </div>
+                )}
+
+                {role === "delivery_rider" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="vehicleType">Vehicle Type</Label>
+                    <Select value={formData.vehicleType} onValueChange={(value) => handleInputChange('vehicleType', value)} required>
+                      <SelectTrigger><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                        <SelectItem value="bicycle">Bicycle</SelectItem>
+                        <SelectItem value="car">Car</SelectItem>
+                        <SelectItem value="van">Van</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {role === "kiosk_partner" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName">Business Name</Label>
+                    <Input id="businessName" required value={formData.businessName} onChange={(e) => handleInputChange('businessName', e.target.value)} />
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Creating Account..." : "Register"}
+                </Button>
+              </form>
+            )}
+
+            {!registered && (
+                <>
+                <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or continue with</span></div>
+                </div>
+
+                <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
+                    <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-5.63 1.9-4.76 0-8.64-3.89-8.64-8.64s3.88-8.64 8.64-8.64c2.69 0 4.33 1.01 5.31 1.94l2.43-2.43C18.4 1.46 15.63 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c7.14 0 11.95-4.99 11.95-12.15 0-.79-.07-1.54-.19-2.28z"></path></svg>
+                    Sign up with Google
+                </Button>
+                </>
+            )}
 
             <div className="mt-6 text-center text-sm">
               Already have an account?{" "}

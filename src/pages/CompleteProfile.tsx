@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,99 +10,101 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Stethoscope } from "lucide-react";
 import { User } from "@supabase/supabase-js";
+import { nigeriaStates } from "@/lib/nigeria-states";
 
 const CompleteProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<string>("patient");
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [lgas, setLgas] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     phone: "",
-    location: "",
-    specialization: "", // for doctors
-    licenseNumber: "", // for doctors
-    pharmacyName: "", // for vendors
-    vehicleType: "", // for delivery riders
-    businessName: "", // for kiosk partners
+    lga: "",
   });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+    const processSession = (session: any) => {
+        if (session) {
+            setUser(session.user);
+            const fullName = session.user.user_metadata.fullName || "";
+            const nameParts = fullName.split(' ');
+            const firstName = nameParts.shift() || "";
+            const lastName = nameParts.join(' ') || "";
+            setFormData(prev => ({ ...prev, firstName, lastName }));
+        } else {
+            navigate("/login");
+        }
+    };
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        processSession(session)
+      } else if (event === "SIGNED_OUT") {
         navigate("/login");
-      } else {
-        setUser(session.user);
       }
     });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      processSession(session)
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [navigate]);
+
+  useEffect(() => {
+    if (selectedState) {
+      const state = nigeriaStates.find(state => state.state === selectedState);
+      setLgas(state ? state.lgas : []);
+      setFormData(prev => ({...prev, lga: ""}));
+    } else {
+      setLgas([]);
+    }
+  }, [selectedState]);
 
   const handleCompleteProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    if (!user) return;
+    if (!user) {
+      toast({ title: "Error", description: "You must be logged in to complete your profile.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const { firstName, lastName, phone, lga } = formData;
+    const fullName = `${firstName} ${lastName}`.trim();
+    const location = selectedState && lga ? `${lga}, ${selectedState}` : "";
+
+    if (!firstName || !lastName || !phone || !location) {
+      toast({ title: "Validation Error", description: "Please fill out all fields.", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Create user role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({ user_id: user.id, role: role as any });
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: fullName, // Ensure snake_case for DB
+          phone: phone,
+          location: location,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
 
-      if (roleError) throw roleError;
-
-      // Create role-specific profile
-      if (role === "patient") {
-        const { error } = await supabase.from("patients").insert({
-          user_id: user.id,
-          full_name: formData.fullName,
-          phone: formData.phone,
-          location: formData.location,
-        });
-        if (error) throw error;
-      } else if (role === "doctor") {
-        const { error } = await supabase.from("doctors").insert({
-          user_id: user.id,
-          full_name: formData.fullName,
-          phone: formData.phone,
-          specialization: formData.specialization,
-          license_number: formData.licenseNumber,
-        });
-        if (error) throw error;
-      } else if (role === "vendor") {
-        const { error } = await supabase.from("vendors").insert({
-          user_id: user.id,
-          pharmacy_name: formData.pharmacyName,
-          owner_name: formData.fullName,
-          phone: formData.phone,
-          location: formData.location,
-        });
-        if (error) throw error;
-      } else if (role === "delivery_rider") {
-        const { error } = await supabase.from("delivery_riders").insert({
-          user_id: user.id,
-          full_name: formData.fullName,
-          phone: formData.phone,
-          vehicle_type: formData.vehicleType,
-        });
-        if (error) throw error;
-      } else if (role === "kiosk_partner") {
-        const { error } = await supabase.from("kiosk_partners").insert({
-          user_id: user.id,
-          business_name: formData.businessName,
-          owner_name: formData.fullName,
-          phone: formData.phone,
-          location: formData.location,
-        });
-        if (error) throw error;
-      }
+      if (profileError) throw profileError;
 
       toast({
         title: "Profile Completed",
         description: "Your account is now fully set up.",
       });
-      
+
       navigate("/dashboard");
 
     } catch (error: any) {
@@ -113,6 +116,10 @@ const CompleteProfile = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInputChange = (id: string, value: string) => {
+    setFormData(prev => ({ ...prev, [id]: value }));
   };
 
   return (
@@ -129,35 +136,30 @@ const CompleteProfile = () => {
         <Card>
           <CardHeader>
             <CardTitle>One Last Step</CardTitle>
-            <CardDescription>Please provide the remaining details to complete your registration.</CardDescription>
+            <CardDescription>Please provide these details to complete your registration.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCompleteProfile} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="role">I am a</Label>
-                <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="patient">Patient</SelectItem>
-                    <SelectItem value="doctor">Doctor</SelectItem>
-                    <SelectItem value="vendor">Pharmacy/Vendor</SelectItem>
-                    <SelectItem value="delivery_rider">Delivery Rider</SelectItem>
-                    <SelectItem value="kiosk_partner">Kiosk Partner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fullName">{role === "vendor" ? "Owner Name" : "Full Name"}</Label>
-                <Input
-                  id="fullName"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                />
-              </div>
+                <div className="flex gap-4">
+                    <div className="space-y-2 flex-1">
+                        <Label htmlFor="firstName">First Name</Label>
+                        <Input
+                        id="firstName"
+                        required
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange("firstName", e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2 flex-1">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input
+                        id="lastName"
+                        required
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange("lastName", e.target.value)}
+                        />
+                    </div>
+                </div>
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
@@ -166,86 +168,29 @@ const CompleteProfile = () => {
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
                 />
               </div>
 
-              {(role === "patient" || role === "vendor" || role === "kiosk_partner") && (
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    required
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  />
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Select onValueChange={setSelectedState} required>
+                  <SelectTrigger><SelectValue placeholder="Select a state" /></SelectTrigger>
+                  <SelectContent>
+                    {nigeriaStates.map((state) => (<SelectItem key={state.state} value={state.state}>{state.state}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              {role === "doctor" && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="specialization">Specialization</Label>
-                    <Input
-                      id="specialization"
-                      required
-                      value={formData.specialization}
-                      onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="licenseNumber">License Number</Label>
-                    <Input
-                      id="licenseNumber"
-                      required
-                      value={formData.licenseNumber}
-                      onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
-                    />
-                  </div>
-                </>
-              )}
-
-              {role === "vendor" && (
+              {selectedState && (
                 <div className="space-y-2">
-                  <Label htmlFor="pharmacyName">Pharmacy Name</Label>
-                  <Input
-                    id="pharmacyName"
-                    required
-                    value={formData.pharmacyName}
-                    onChange={(e) => setFormData({ ...formData, pharmacyName: e.target.value })}
-                  />
-                </div>
-              )}
-
-              {role === "delivery_rider" && (
-                <div className="space-y-2">
-                  <Label htmlFor="vehicleType">Vehicle Type</Label>
-                  <Select
-                    value={formData.vehicleType}
-                    onValueChange={(value) => setFormData({ ...formData, vehicleType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select vehicle type" />
-                    </SelectTrigger>
+                  <Label htmlFor="lga">LGA</Label>
+                  <Select value={formData.lga} onValueChange={(value) => handleInputChange("lga", value)} required>
+                    <SelectTrigger><SelectValue placeholder="Select a LGA" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                      <SelectItem value="bicycle">Bicycle</SelectItem>
-                      <SelectItem value="car">Car</SelectItem>
-                      <SelectItem value="van">Van</SelectItem>
+                      {lgas.map((lga) => (<SelectItem key={lga} value={lga}>{lga}</SelectItem>))}
                     </SelectContent>
                   </Select>
-                </div>
-              )}
-
-              {role === "kiosk_partner" && (
-                <div className="space-y-2">
-                  <Label htmlFor="businessName">Business Name</Label>
-                  <Input
-                    id="businessName"
-                    required
-                    value={formData.businessName}
-                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                  />
                 </div>
               )}
 

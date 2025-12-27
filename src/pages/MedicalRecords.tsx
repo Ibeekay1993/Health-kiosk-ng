@@ -1,24 +1,29 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+import { Routes, Route } from "react-router-dom";
+import MedicalRecordsLayout from "@/pages/medical-records/MedicalRecordsLayout";
+import Overview from "@/pages/medical-records/Overview";
+import MedicalHistory from "@/pages/medical-records/MedicalHistory";
+import Documents from "@/pages/medical-records/Documents";
+import Insurance from "@/pages/medical-records/Insurance";
+import Consultations from "@/pages/medical-records/Consultations";
+import Prescriptions from "@/pages/medical-records/Prescriptions";
+import LabResults from "@/pages/medical-records/LabResults";
+import withAuth from "@/hoc/withAuth";
 
 const MedicalRecords = () => {
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">Medical Records</h1>
-      <div className="flex justify-between items-center mb-8">
-        <p>View and manage your health records.</p>
-        <Button>Upload Document</Button>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Documents</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No medical records found. Upload your first document to get started.</p>
-        </CardContent>
-      </Card>
-    </div>
+    <MedicalRecordsLayout>
+      <Routes>
+        <Route index element={<Overview />} />
+        <Route path="history" element={<MedicalHistory />} />
+        <Route path="documents" element={<Documents />} />
+        <Route path="insurance" element={<Insurance />} />
+        <Route path="consultations" element={<Consultations />} />
+        <Route path="prescriptions" element={<Prescriptions />} />
+        <Route path="lab-results" element={<LabResults />} />
+      </Routes>
+    </MedicalRecordsLayout>
   );
 };
 
-export default MedicalRecords;
+export default withAuth(MedicalRecords);

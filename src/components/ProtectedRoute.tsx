@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Session } from "@supabase/supabase-js";
+import { Session, User } from "@supabase/supabase-js";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,51 +10,57 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
   const location = useLocation();
 
   useEffect(() => {
+    const fetchSessionAndProfile = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error getting session:", error);
+        setLoading(false);
+        return;
+      }
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        await fetchUserProfile(session.user.id);
+      }
+      setLoading(false);
+    };
+
+    fetchSessionAndProfile();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setSession(session);
+        setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id);
-          }, 0);
+          fetchUserProfile(session.user.id);
         } else {
-          setLoading(false);
+          setProfile(null);
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
+        .from("profiles")
+        .select("*")
         .eq("user_id", userId)
         .single();
-
-      if (!error && data) {
-        setUserRole(data.role);
-      }
+      if (error) throw error;
+      if (data) setProfile(data);
     } catch (error) {
-      console.error("Error fetching user role:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching user profile:", error);
+      setProfile(null);
     }
   };
 
@@ -70,8 +76,14 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
-    return <Navigate to="/" replace />;
+  if (profile && (!profile.full_name || !profile.phone || !profile.location)) {
+    if (location.pathname !== "/complete-profile") {
+      return <Navigate to="/complete-profile" state={{ from: location }} replace />;
+    }
+  }
+
+  if (allowedRoles && (!profile?.role || !allowedRoles.includes(profile.role))) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return <>{children}</>;

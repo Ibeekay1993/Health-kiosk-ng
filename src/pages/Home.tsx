@@ -16,7 +16,7 @@ const Home = () => {
         return;
       }
       if (data.session) {
-        navigate("/");
+        navigate("/dashboard");
       }
     };
 
@@ -24,7 +24,7 @@ const Home = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen">
+    <div>
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-primary to-secondary text-white py-20 px-4">
         <div className="container mx-auto text-center max-w-4xl">

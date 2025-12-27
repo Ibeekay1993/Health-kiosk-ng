@@ -13,7 +13,6 @@ const navItems = [
   { title: "Chats", href: "/chats" },
   { title: "Prescriptions", href: "/prescriptions" },
   { title: "Laboratory Requests", href: "/lab-requests" },
-  { title: "Medical Records", href: "/medical-records" },
   { title: "Subscription", href: "/subscription" },
   { title: "Family Members", href: "/family-members" },
 ];
