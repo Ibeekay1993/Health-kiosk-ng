@@ -98,26 +98,38 @@ const Register = () => {
     }
 
     try {
+        // Step 1: Sign up the user. The trigger will only handle inserting the role.
         const { data: { user }, error: authError } = await supabase.auth.signUp({
             email: email,
             password: password,
             options: {
               data: {
-                fullName: fullName,
-                phone: phone,
-                location: location,
+                // Pass only the role, as this is all the new simplified trigger needs.
                 role: role,
-                specialization: specialization,
-                licenseNumber: licenseNumber,
-                pharmacyName: pharmacyName,
-                vehicleType: vehicleType,
-                businessName: businessName,
               }
             }
         });
 
         if (authError) throw authError;
         if (!user) throw new Error("Registration failed, user not created.");
+
+        // Step 2: Explicitly call the Edge Function to create the detailed user profile.
+        const { error: functionError } = await supabase.functions.invoke("create-user-profile", {
+            body: {
+                user_id: user.id,
+                role,
+                full_name: fullName,
+                phone,
+                location,
+                specialization,
+                license_number: licenseNumber,
+                pharmacy_name: pharmacyName,
+                vehicle_type: vehicleType,
+                business_name: businessName
+            }
+        });
+        
+        if (functionError) throw functionError;
 
         setRegistered(true);
         toast({
@@ -127,8 +139,8 @@ const Register = () => {
 
     } catch (error: any) {
         let errorMessage = error.message || "An unexpected error occurred.";
-        if (error.message && (error.message.includes("Database error saving new user") || error.message.includes("violates check constraint"))) {
-            errorMessage = "A database error occurred. Please ensure all fields are correct and try again.";
+        if (error.message && (error.message.includes("Function returned an error") || error.message.includes("violates check constraint"))) {
+            errorMessage = "A database error occurred while creating your profile. Please ensure all fields are correct and try again.";
         }
 
         toast({
