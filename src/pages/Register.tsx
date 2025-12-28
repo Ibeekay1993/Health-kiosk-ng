@@ -98,23 +98,25 @@ const Register = () => {
     }
 
     try {
-        // Step 1: Sign up the user. The trigger will only handle inserting the role.
-        const { data: { user }, error: authError } = await supabase.auth.signUp({
+        // Step 1: Sign up the user.
+        const { data: { user, session }, error: authError } = await supabase.auth.signUp({
             email: email,
             password: password,
             options: {
               data: {
-                // Pass only the role, as this is all the new simplified trigger needs.
                 role: role,
               }
             }
         });
 
         if (authError) throw authError;
-        if (!user) throw new Error("Registration failed, user not created.");
+        if (!user || !session) throw new Error("Registration failed, user not created.");
 
-        // Step 2: Explicitly call the Edge Function to create the detailed user profile.
+        // Step 2: Explicitly call the Edge Function with the user's access token.
         const { error: functionError } = await supabase.functions.invoke("create-user-profile", {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            },
             body: {
                 user_id: user.id,
                 role,
@@ -192,7 +194,7 @@ const Register = () => {
         <Card>
           <CardHeader>
             <CardTitle>{registered ? "Check Your Email" : "Register"}</CardTitle>
-            <CardDescription>{registered ? "We've sent a confirmation link to your email." : "Choose your role and fill in your details."}</CardDescription>
+            <CardDescription>{registered ? "We\'ve sent a confirmation link to your email." : "Choose your role and fill in your details."}</CardDescription>
           </CardHeader>
           <CardContent>
             {registered ? (
@@ -258,7 +260,7 @@ const Register = () => {
                     <Select value={formData.lga} onValueChange={(value) => handleInputChange("lga", value)} required>
                         <SelectTrigger><SelectValue placeholder="Select a LGA" /></SelectTrigger>
                         <SelectContent>
-                        {lgas.map((lga) => (<SelectItem key={lga} value={lga}>{lga}</SelectItem>))}
+                        {lgas.map((lga) => (<SelectItem key={lga} value={lga}>{lga}</SelectItem>))}\
                         </SelectContent>
                     </Select>
                     </div>

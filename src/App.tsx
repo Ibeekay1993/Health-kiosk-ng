@@ -40,62 +40,65 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Disclaimer from "./pages/Disclaimer";
 import Contact from "./pages/Contact";
 import Consultation from "./pages/Consultation";
+import { AuthProvider } from "./hooks/use-auth";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <HashRouter>
-        <ScrollToTop /> {/* Add the component here */}
-        <Routes>
-          {/* Public routes with Navbar */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/health-education" element={<HealthEducation />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/disclaimer" element={<Disclaimer />} />
-            <Route path="/contact" element={<Contact />} />
-          </Route>
+  <AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <HashRouter>
+          <ScrollToTop />
+          <Routes>
+            {/* Public routes with Navbar */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/health-education" element={<HealthEducation />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/contact" element={<Contact />} />
+            </Route>
 
-          {/* Protected routes with DashboardLayout */}
-          <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-            <Route path="/dashboard" element={<MobileDashboard />} />
-            <Route path="/appointments" element={<Appointments />} />
-            <Route path="/chat" element={<Chats />} />
-            <Route path="/chat/:id" element={<Chat />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/prescriptions" element={<Prescriptions />} />
-            <Route path="/medical-records/*" element={<MedicalRecords />} />
-            <Route path="/laboratory-requests" element={<LaboratoryRequests />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="/family-members" element={<FamilyMembers />} />
-            <Route path="/find-kiosk" element={<FindKiosk />} />
-            <Route path="/consultation" element={<Consultation />} />
-          </Route>
-          
-          {/* Other protected routes */}
-          <Route path="/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
-          <Route path="/triage" element={<ProtectedRoute><Triage /></ProtectedRoute>} />
-          <Route path="/vendor-selection" element={<ProtectedRoute><VendorSelection /></ProtectedRoute>} />
-          <Route path="/insurance" element={<ProtectedRoute><Insurance /></ProtectedRoute>} />
-          <Route path="/doctor-dashboard" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorDashboard /></ProtectedRoute>} />
-          <Route path="/doctor-portal" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorPortal /></ProtectedRoute>} />
-          <Route path="/patients" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><Patients /></ProtectedRoute>} />
-          <Route path="/vendor-portal" element={<ProtectedRoute allowedRoles={["vendor", "admin"]}><VendorPortal /></ProtectedRoute>} />
-          <Route path="/delivery-portal" element={<ProtectedRoute allowedRoles={["delivery_rider", "admin"]}><DeliveryPortal /></ProtectedRoute>} />
-          <Route path="/kiosk-portal" element={<ProtectedRoute allowedRoles={["kiosk_partner", "admin"]}><KioskPortal /></ProtectedRoute>} />
-          <Route path="/vitals" element={<ProtectedRoute allowedRoles={["kiosk_partner", "doctor", "admin"]}><Vitals /></ProtectedRoute>} />
+            {/* Protected routes with DashboardLayout */}
+            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<MobileDashboard />} />
+              <Route path="/appointments" element={<Appointments />} />
+              <Route path="/chat" element={<Chats />} />
+              <Route path="/chat/:id" element={<Chat />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/prescriptions" element={<Prescriptions />} />
+              <Route path="/medical-records/*" element={<MedicalRecords />} />
+              <Route path="/laboratory-requests" element={<LaboratoryRequests />} />
+              <Route path="/subscription" element={<Subscription />} />
+              <Route path="/family-members" element={<FamilyMembers />} />
+              <Route path="/find-kiosk" element={<FindKiosk />} />
+              <Route path="/consultation" element={<Consultation />} />
+            </Route>
+            
+            {/* Other protected routes */}
+            <Route path="/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
+            <Route path="/triage" element={<ProtectedRoute><Triage /></ProtectedRoute>} />
+            <Route path="/vendor-selection" element={<ProtectedRoute><VendorSelection /></ProtectedRoute>} />
+            <Route path="/insurance" element={<ProtectedRoute><Insurance /></ProtectedRoute>} />
+            <Route path="/doctor-dashboard" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorDashboard /></ProtectedRoute>} />
+            <Route path="/doctor-portal" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><DoctorPortal /></ProtectedRoute>} />
+            <Route path="/patients" element={<ProtectedRoute allowedRoles={["doctor", "admin"]}><Patients /></ProtectedRoute>} />
+            <Route path="/vendor-portal" element={<ProtectedRoute allowedRoles={["vendor", "admin"]}><VendorPortal /></ProtectedRoute>} />
+            <Route path="/delivery-portal" element={<ProtectedRoute allowedRoles={["delivery_rider", "admin"]}><DeliveryPortal /></ProtectedRoute>} />
+            <Route path="/kiosk-portal" element={<ProtectedRoute allowedRoles={["kiosk_partner", "admin"]}><KioskPortal /></ProtectedRoute>} />
+            <Route path="/vitals" element={<ProtectedRoute allowedRoles={["kiosk_partner", "doctor", "admin"]}><Vitals /></ProtectedRoute>} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </HashRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </HashRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </AuthProvider>
 );
 
 export default App;

@@ -6,39 +6,41 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
 
 const Overview = () => {
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuth();
   const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (session) {
-          setUser(session.user);
+    const fetchPatientData = async () => {
+      if (user) {
+        try {
           const { data: patientData, error: patientError } = await supabase
             .from("patients")
             .select("*")
-            .eq("user_id", session.user.id)
+            .eq("user_id", user.id)
             .single();
-          if (patientError && patientError.code !== 'PGRST116') { // Ignore "No rows found" error
+          if (patientError && patientError.code !== 'PGRST116') {
             throw patientError;
           }
           setPatient(patientData);
+        } catch (error: any) {
+          toast({ title: "Error fetching patient data", description: error.message, variant: "destructive" });
+        } finally {
+          setLoading(false);
         }
-      } catch (error: any) {
-        toast({ title: "Error fetching user data", description: error.message, variant: "destructive" });
-      } finally {
+      } else if (!authLoading) {
         setLoading(false);
       }
     };
-    fetchUserData();
-  }, [toast]);
+    fetchPatientData();
+  }, [user, authLoading, toast]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +67,21 @@ const Overview = () => {
     setPatient({ ...patient, [id]: value });
   };
 
-  if (loading) return <div className="text-center p-4">Loading...</div>;
+  if (loading || authLoading) return <div className="text-center p-4">Loading...</div>;
+
+  if (!user) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Please Log In</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Please log in to view your medical records.</p>
+          <Button className="mt-4" onClick={() => navigate("/login")}>Login</Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!patient) {
     return (
@@ -75,8 +91,7 @@ const Overview = () => {
         </CardHeader>
         <CardContent>
           <p>It looks like you haven't set up your patient profile yet. Please create one to manage your medical records.</p>
-          {/* Add a button or form here to create a new patient profile */}
-          <Button className="mt-4" onClick={() => setPatient({})}>Create Profile</Button>
+          <Button className="mt-4" onClick={() => navigate("/complete-profile")}>Create Profile</Button>
         </CardContent>
       </Card>
     );
@@ -129,7 +144,7 @@ const Overview = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="height">Height (cm)</Label>
-                <Input id="height" type="number" value={patient.height || ''} onChange={handleInputChange} />
+                <Input id="height" type="number" value={patient.height || ''} onChange_handleInputChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="blood_type">Blood Type</Label>
