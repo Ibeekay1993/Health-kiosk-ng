@@ -1,9 +1,10 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, UserPlus, AlertCircle } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -14,69 +15,79 @@ const Patients = () => {
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [stats, setStats] = useState({ total: 0, active: 0, followUp: 0 });
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    checkAccess();
-  }, []);
+    const initialize = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/login");
+        return;
+      }
 
-  const checkAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
+      if (!roles || (roles.role !== "admin" && roles.role !== "doctor")) {
+        toast({ title: "Access Denied", description: "You don't have permission to view this page.", variant: "destructive" });
+        navigate("/");
+        return;
+      }
 
-    if (!roles || (roles.role !== "admin" && roles.role !== "doctor")) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to view this page.",
-        variant: "destructive",
-      });
-      navigate("/");
-      return;
-    }
+      setUserRole(roles.role);
+      await fetchPatients(user.id, roles.role);
+    };
 
-    setUserRole(roles.role);
-    fetchPatients(user.id, roles.role);
-  };
+    initialize();
+  }, [navigate, toast]);
 
   const fetchPatients = async (userId: string, role: string) => {
     setLoading(true);
     try {
-      let query = supabase.from("patients").select("*");
+      let query = supabase.from("patients").select("*", { count: "exact" });
 
-      // If doctor, only show assigned patients
       if (role === "doctor") {
-        const { data: consultations } = await supabase
+        const { data: consultations, error: consultError } = await supabase
           .from("consultations")
           .select("patient_id")
           .eq("doctor_id", userId);
 
+        if (consultError) throw consultError;
+
         if (consultations) {
           const patientIds = consultations.map(c => c.patient_id);
-          query = query.in("id", patientIds);
+          if (patientIds.length > 0) {
+            query = query.in("id", patientIds);
+          } else {
+            // No patients assigned, so return empty
+            setPatients([]);
+            setStats({ total: 0, active: 0, followUp: 0 });
+            setLoading(false);
+            return;
+          }
         }
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) throw error;
-      setPatients(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
+      
+      const patientData = data || [];
+      setPatients(patientData);
+      setStats({
+        total: count || 0,
+        active: patientData.filter(p => p.status === 'Active').length,
+        followUp: patientData.filter(p => p.status === 'Follow-up').length
       });
+
+    } catch (error: any) {
+      toast({ title: "Error", description: `Failed to fetch patients: ${error.message}`, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -84,21 +95,14 @@ const Patients = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Active":
-        return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "Follow-up":
-        return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-500 border-gray-500/20";
+      case "Active": return "bg-green-500/10 text-green-500 border-green-500/20";
+      case "Follow-up": return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+      default: return "bg-gray-500/10 text-gray-500 border-gray-500/20";
     }
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <p>Loading patients...</p>
-      </div>
-    );
+    return <div className="container mx-auto px-4 py-8"><p>Loading patients...</p></div>;
   }
 
   const filteredPatients = patients.filter(p =>
@@ -116,18 +120,31 @@ const Patients = () => {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader><CardTitle>Total Patients</CardTitle><CardDescription>Assigned to you</CardDescription></CardHeader>
+          <CardContent><p className="text-4xl font-bold">{stats.total}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Active Cases</CardTitle><CardDescription>Currently under treatment</CardDescription></CardHeader>
+          <CardContent><p className="text-4xl font-bold">{stats.active}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Follow-ups</CardTitle><CardDescription>Requiring follow-up</CardDescription></CardHeader>
+          <CardContent><p className="text-4xl font-bold">{stats.followUp}</p></CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search patients by name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search patients by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -138,16 +155,7 @@ const Patients = () => {
             </div>
           ) : (
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Age</TableHead><TableHead>Phone</TableHead><TableHead>Location</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
               <TableBody>
                 {filteredPatients.map((patient) => (
                   <TableRow key={patient.id}>
@@ -155,11 +163,7 @@ const Patients = () => {
                     <TableCell>{patient.age || "N/A"}</TableCell>
                     <TableCell>{patient.phone}</TableCell>
                     <TableCell>{patient.location || "N/A"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusColor(patient.status)}>
-                        {patient.status}
-                      </Badge>
-                    </TableCell>
+                    <TableCell><Badge variant="outline" className={getStatusColor(patient.status)}>{patient.status}</Badge></TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" onClick={() => navigate(`/records`)}>
                         View Records
@@ -172,36 +176,6 @@ const Patients = () => {
           )}
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Patients</CardTitle>
-            <CardDescription>Registered in system</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold">1,234</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Cases</CardTitle>
-            <CardDescription>Currently under treatment</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold">89</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Follow-ups</CardTitle>
-            <CardDescription>Scheduled this week</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold">24</p>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };

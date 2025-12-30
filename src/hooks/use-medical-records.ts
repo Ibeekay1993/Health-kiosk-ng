@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
 
 export interface MedicalRecord {
   id: number;
@@ -14,21 +13,14 @@ export interface MedicalRecord {
 export const useMedicalRecords = () => {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchRecords = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
         const { data, error } = await supabase
           .from("medical_records")
           .select("*")
-          .eq("user_id", user.id)
           .order("record_date", { ascending: false });
 
         if (error) {
@@ -45,7 +37,7 @@ export const useMedicalRecords = () => {
     };
 
     fetchRecords();
-  }, [user]);
+  }, []);
 
   return { records, loading };
 };

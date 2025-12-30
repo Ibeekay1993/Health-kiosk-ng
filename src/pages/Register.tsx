@@ -1,343 +1,176 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Stethoscope } from "lucide-react";
-import { nigeriaStates } from "@/lib/nigeria-states";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ReloadIcon, ArrowRightIcon, ArrowLeftIcon, PersonIcon, CheckIcon } from "@radix-ui/react-icons";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
-type Specialization = {
-  name: string;
-};
+// Define the available roles
+type Role = "patient" | "doctor" | "vendor";
 
-const Register = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
+const RoleCard = ({ role, icon, description, selectedRole, onSelect }: { role: Role, icon: React.ReactNode, description: string, selectedRole: Role | "", onSelect: (role: Role) => void }) => (
+  <div
+    className={cn(
+      "p-6 rounded-lg border-2 cursor-pointer transition-all duration-200",
+      selectedRole === role
+        ? "border-primary bg-primary/10 shadow-lg"
+        : "border-border hover:border-primary/50 hover:bg-muted/50"
+    )}
+    onClick={() => onSelect(role)}
+  >
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        {icon}
+        <div>
+          <h3 className="font-bold text-lg">{role.charAt(0).toUpperCase() + role.slice(1)}</h3>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      {selectedRole === role && <CheckIcon className="h-6 w-6 text-primary" />}
+    </div>
+  </div>
+);
+
+
+const RegisterPage = () => {
+  const [step, setStep] = useState(1);
+  const [role, setRole] = useState<Role | "">("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<string>("patient");
-  const [specializations, setSpecializations] = useState<Specialization[]>([]);
-  const [registered, setRegistered] = useState(false);
-  const [selectedState, setSelectedState] = useState<string>("");
-  const [lgas, setLgas] = useState<string[]>([]);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    firstName: "",
-    lastName: "",
-    phone: "",
-    lga: "",
-    specialization: "", // for doctors
-    licenseNumber: "", // for doctors
-    pharmacyName: "", // for vendors
-    vehicleType: "", // for delivery riders
-    businessName: "", // for kiosk partners
-  });
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (selectedState) {
-      const state = nigeriaStates.find(state => state.state === selectedState);
-      setLgas(state ? state.lgas : []);
-      handleInputChange("lga", ""); // Reset LGA when state changes
-    } else {
-      setLgas([]);
+  const handleNextStep = () => {
+    if (step === 1 && !role) {
+      toast({ title: "Please select a role", variant: "destructive" });
+      return;
     }
-  }, [selectedState]);
+    setStep(step + 1);
+  };
 
-  useEffect(() => {
-    const fetchSpecializations = async () => {
-      try {
-        const { data, error } = await supabase.rpc('get_doctor_specializations' as any);
-        if (error) throw error;
-        if (data && Array.isArray(data)) {
-          setSpecializations(data.map((s: any) => ({ name: s })));
-        } else {
-          throw new Error("Invalid specialization data received");
-        }
-      } catch (error: any) {
-        console.error("Error fetching specializations:", error.message);
-        setSpecializations([
-            { name: "General Medicine" }, { name: "Pediatrics" }, { name: "Cardiology" },
-            { name: "Dermatology" }, { name: "Neurology" }, { name: "Orthopedics" },
-            { name: "Oncology" }, { name: "Gastroenterology" }, { name: "Psychiatry" },
-            { name: "Family Medicine" },
-        ]);
-        toast({
-          title: "Could not fetch specializations",
-          description: "Using a default list. Please try again later.",
-          variant: "destructive"
-        });
-      }
-    };
-
-    if (role === 'doctor') {
-      fetchSpecializations();
-    }
-  }, [role, toast]);
-
+  const handlePrevStep = () => {
+    setStep(step - 1);
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { 
-        email, password, firstName, lastName, phone, lga,
-        specialization, licenseNumber, pharmacyName, vehicleType, businessName 
-    } = formData;
-    
-    const fullName = `${firstName} ${lastName}`.trim();
-    const location = selectedState && lga ? `${lga}, ${selectedState}` : "";
-
-    if (!email || !password || !firstName || !lastName || !phone || !location) {
-        toast({ title: "Registration Failed", description: "Please fill in all required fields, including state and LGA.", variant: "destructive" });
-        setLoading(false);
-        return;
-    }
-
-    try {
-        // Step 1: Sign up the user.
-        const { data: { user, session }, error: authError } = await supabase.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-              data: {
-                role: role,
-              }
-            }
-        });
-
-        if (authError) throw authError;
-        if (!user || !session) throw new Error("Registration failed, user not created.");
-
-        // Step 2: Explicitly call the Edge Function with the user's access token.
-        const { error: functionError } = await supabase.functions.invoke("create-user-profile", {
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: {
-                user_id: user.id,
-                role,
-                full_name: fullName,
-                phone,
-                location,
-                specialization,
-                license_number: licenseNumber,
-                pharmacy_name: pharmacyName,
-                vehicle_type: vehicleType,
-                business_name: businessName
-            }
-        });
-        
-        if (functionError) throw functionError;
-
-        setRegistered(true);
-        toast({
-            title: "Registration Successful",
-            description: "Please check your email to confirm your account.",
-        });
-
-    } catch (error: any) {
-        let errorMessage = error.message || "An unexpected error occurred.";
-        if (error.message && (error.message.includes("Function returned an error") || error.message.includes("violates check constraint"))) {
-            errorMessage = "A database error occurred while creating your profile. Please ensure all fields are correct and try again.";
-        }
-
-        toast({
-            title: "Registration Failed",
-            description: errorMessage,
-            variant: "destructive",
-        });
-    } finally {
-        setLoading(false);
-    }
-};
-
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          phone: phone,
+          role: role, // Pass the selected role to Supabase
         },
-      });
-      if (error) throw error;
-    } catch (error: any) {
+      },
+    });
+
+    if (error) {
       toast({
-        title: "Google Login Failed",
+        title: "Registration Failed",
         description: error.message,
         variant: "destructive",
       });
+    } else {
+      toast({
+        title: "Registration Successful",
+        description: "Please check your email to verify your account.",
+      });
+      navigate("/login");
     }
+
+    setLoading(false);
   };
 
-  const handleInputChange = (id: string, value: string) => {
-    setFormData(prev => ({ ...prev, [id]: value }));
-  };
+  const progressValue = (step / 3) * 100;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Stethoscope className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">HealthKiosk NG</h1>
-          </div>
-          <p className="text-muted-foreground">Create your account to get started</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{registered ? "Check Your Email" : "Register"}</CardTitle>
-            <CardDescription>{registered ? "We\'ve sent a confirmation link to your email." : "Choose your role and fill in your details."}</CardDescription>
+    <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-lg mx-auto">
+        <Card className="rounded-2xl shadow-xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Create an Account</CardTitle>
+            <CardDescription>Join us to manage your health efficiently.</CardDescription>
           </CardHeader>
           <CardContent>
-            {registered ? (
-              <div className="space-y-4 text-center">
-                 <p>Your registration was successful! Please check your inbox and click the confirmation link to activate your account.</p>
-                <Button onClick={() => navigate("/login")} className="w-full mt-4">Proceed to Login</Button>
-              </div>
-            ) : (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="role">I am a</Label>
-                  <Select value={role} onValueChange={setRole}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="patient">Patient</SelectItem>
-                      <SelectItem value="doctor">Doctor</SelectItem>
-                      <SelectItem value="vendor">Pharmacy/Vendor</SelectItem>
-                      <SelectItem value="delivery_rider">Delivery Rider</SelectItem>
-                      <SelectItem value="kiosk_partner">Kiosk Partner</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <div className="mb-6">
+              <Progress value={progressValue} className="w-full" />
+              <p className="text-sm text-muted-foreground mt-2 text-center">Step {step} of 3</p>
+            </div>
+            
+            <form onSubmit={handleRegister} className="space-y-6">
+              {step === 1 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-center">What is your role?</h3>
+                  <RoleCard role="patient" icon={<PersonIcon className="h-8 w-8 text-primary" />} description="Access health services and manage your records." selectedRole={role} onSelect={setRole} />
+                  <RoleCard role="doctor" icon={<PersonIcon className="h-8 w-8 text-sky-500" />} description="Provide consultations and manage patient care." selectedRole={role} onSelect={setRole} />
+                  <RoleCard role="vendor" icon={<PersonIcon className="h-8 w-8 text-amber-500" />} description="Manage pharmacy or lab services." selectedRole={role} onSelect={setRole} />
+                  <Button type="button" className="w-full" onClick={handleNextStep}>
+                    Next <ArrowRightIcon className="ml-2 h-4 w-4" />
+                  </Button>
                 </div>
+              )}
 
-                <div className="flex gap-4">
-                    <div className="space-y-2 flex-1">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" required value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)} />
-                    </div>
-                    <div className="space-y-2 flex-1">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" required value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} />
-                    </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" required value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" required value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
-                </div>
-
-                {/* Location fields - now visible for all roles */}
-                <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
-                    <Select onValueChange={setSelectedState} required>
-                    <SelectTrigger><SelectValue placeholder="Select a state" /></SelectTrigger>
-                    <SelectContent>
-                        {nigeriaStates.map((state) => (<SelectItem key={state.state} value={state.state}>{state.state}</SelectItem>))}
-                    </SelectContent>
-                    </Select>
-                </div>
-                {selectedState && (
-                    <div className="space-y-2">
-                    <Label htmlFor="lga">LGA</Label>
-                    <Select value={formData.lga} onValueChange={(value) => handleInputChange("lga", value)} required>
-                        <SelectTrigger><SelectValue placeholder="Select a LGA" /></SelectTrigger>
-                        <SelectContent>
-                        {lgas.map((lga) => (<SelectItem key={lga} value={lga}>{lga}</SelectItem>))}\
-                        </SelectContent>
-                    </Select>
-                    </div>
-                )}
-
-                {role === "doctor" && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="specialization">Specialization</Label>
-                      <Select value={formData.specialization} onValueChange={(value) => handleInputChange('specialization', value)} required>
-                        <SelectTrigger><SelectValue placeholder="Select a specialization" /></SelectTrigger>
-                        <SelectContent>
-                          {specializations.map((spec) => (<SelectItem key={spec.name} value={spec.name}>{spec.name}</SelectItem>))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="licenseNumber">License Number</Label>
-                      <Input id="licenseNumber" required value={formData.licenseNumber} onChange={(e) => handleInputChange('licenseNumber', e.target.value)} />
-                    </div>
-                  </>
-                )}
-
-                {role === "vendor" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="pharmacyName">Pharmacy Name</Label>
-                    <Input id="pharmacyName" required value={formData.pharmacyName} onChange={(e) => handleInputChange('pharmacyName', e.target.value)} />
+              {step === 2 && (
+                <div className="space-y-4">
+                   <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input id="email" type="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
-                )}
-
-                {role === "delivery_rider" && (
                   <div className="space-y-2">
-                    <Label htmlFor="vehicleType">Vehicle Type</Label>
-                    <Select value={formData.vehicleType} onValueChange={(value) => handleInputChange('vehicleType', value)} required>
-                      <SelectTrigger><SelectValue placeholder="Select vehicle type" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                        <SelectItem value="bicycle">Bicycle</SelectItem>
-                        <SelectItem value="car">Car</SelectItem>
-                        <SelectItem value="van">Van</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
-                )}
-
-                {role === "kiosk_partner" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="businessName">Business Name</Label>
-                    <Input id="businessName" required value={formData.businessName} onChange={(e) => handleInputChange('businessName', e.target.value)} />
+                  <div className="flex gap-4">
+                    <Button type="button" variant="outline" className="w-full" onClick={handlePrevStep}>
+                      <ArrowLeftIcon className="mr-2 h-4 w-4" /> Previous
+                    </Button>
+                    <Button type="button" className="w-full" onClick={handleNextStep}>
+                      Next <ArrowRightIcon className="ml-2 h-4 w-4" />
+                    </Button>
                   </div>
-                )}
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating Account..." : "Register"}
-                </Button>
-              </form>
-            )}
-
-            {!registered && (
-                <>
-                <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or continue with</span></div>
                 </div>
+              )}
 
-                <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
-                    <svg role="img" viewBox="0 0 24 24" className="mr-2 h-4 w-4"><path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-5.63 1.9-4.76 0-8.64-3.89-8.64-8.64s3.88-8.64 8.64-8.64c2.69 0 4.33 1.01 5.31 1.94l2.43-2.43C18.4 1.46 15.63 0 12.48 0 5.88 0 0 5.88 0 12.48s5.88 12.48 12.48 12.48c7.14 0 11.95-4.99 11.95-12.15 0-.79-.07-1.54-.19-2.28z"></path></svg>
-                    Sign up with Google
-                </Button>
-                </>
-            )}
-
+              {step === 3 && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full-name">Full Name</Label>
+                    <Input id="full-name" type="text" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                  </div>
+                  <div className="flex gap-4">
+                    <Button type="button" variant="outline" className="w-full" onClick={handlePrevStep}>
+                      <ArrowLeftIcon className="mr-2 h-4 w-4" /> Previous
+                    </Button>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> : "Create Account"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </form>
+            
             <div className="mt-6 text-center text-sm">
               Already have an account?{" "}
-              <button onClick={() => navigate("/login")} className="text-primary hover:underline font-medium">
-                Sign in
-              </button>
+              <Link to="/login" className="font-semibold text-primary hover:underline">
+                Log In
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -346,4 +179,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default RegisterPage;
