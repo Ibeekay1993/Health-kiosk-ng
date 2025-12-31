@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { FcGoogle } from "react-icons/fc";
+import useAuth from "@/hooks/useAuth";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -16,6 +17,17 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { session, is_onboarded } = useAuth();
+
+  useEffect(() => {
+    if (session) {
+      if (is_onboarded) {
+        navigate("/dashboard");
+      } else {
+        navigate("/onboarding");
+      }
+    }
+  }, [session, is_onboarded, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +47,9 @@ const LoginPage = () => {
     } else {
       toast({
         title: "Login Successful",
-        description: "Welcome back! Redirecting you to your dashboard...",
+        description: "Welcome back!",
       });
-      navigate("/dashboard");
+      // The useEffect will handle redirection.
     }
 
     setLoading(false);

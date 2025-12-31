@@ -139,6 +139,87 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_riders: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          phone: string
+          user_id: string
+          vehicle_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id?: string
+          phone: string
+          user_id: string
+          vehicle_type: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          phone?: string
+          user_id?: string
+          vehicle_type?: string
+        }
+        Relationships: []
+      }
+      doctor_referees: {
+        Row: {
+          doctor_id: string | null
+          email: string | null
+          id: number
+          name: string | null
+          phone: string | null
+        }
+        Insert: {
+          doctor_id?: string | null
+          email?: string | null
+          id?: number
+          name?: string | null
+          phone?: string | null
+        }
+        Update: {
+          doctor_id?: string | null
+          email?: string | null
+          id?: number
+          name?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      doctors: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          license_number: string
+          phone: string
+          specialization: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id?: string
+          license_number: string
+          phone: string
+          specialization: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          license_number?: string
+          phone?: string
+          specialization?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       id_sequences: {
         Row: {
           last_value: number
@@ -175,6 +256,36 @@ export type Database = {
           patient_id?: string
           policy_number?: string
           provider?: string
+        }
+        Relationships: []
+      }
+      kiosk_partners: {
+        Row: {
+          business_name: string
+          created_at: string | null
+          id: string
+          location: string
+          owner_name: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          business_name: string
+          created_at?: string | null
+          id?: string
+          location: string
+          owner_name: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string | null
+          id?: string
+          location?: string
+          owner_name?: string
+          phone?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -278,6 +389,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      patients: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          location: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id?: string
+          location: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          location?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       prescriptions: {
         Row: {
@@ -407,6 +545,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_subscriptions: {
         Row: {
           active: boolean
@@ -441,6 +600,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendors: {
+        Row: {
+          created_at: string | null
+          id: string
+          location: string
+          owner_name: string
+          pharmacy_name: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          location: string
+          owner_name: string
+          pharmacy_name: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          location?: string
+          owner_name?: string
+          pharmacy_name?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       vitals: {
         Row: {

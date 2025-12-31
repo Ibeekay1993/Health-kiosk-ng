@@ -1,95 +1,95 @@
-
-import { Outlet, useLocation, Navigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from 'react';
+import { useToast } from "@/hooks/use-toast";
+import useAuth from "@/hooks/useAuth";
+import Stepper from "@/components/ui/stepper";
+import ProfessionalProfile from "./doctor/ProfessionalProfile";
+import DocumentSubmission from "./doctor/DocumentSubmission";
+import RefereeSubmission from "./doctor/RefereeSubmission";
+import InterviewPreparation from "./doctor/InterviewPreparation";
+import HrReview from "./doctor/HrReview";
+import DocumentSigning from "./doctor/DocumentSigning";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const steps = [
-  { id: '1', name: 'Professional Profile', href: '/doctor-onboarding/profile' },
-  { id: '2', name: 'Document Submission', href: '/doctor-onboarding/documents' },
-  { id: '3', name: 'Referee Submission', href: '/doctor-onboarding/referees' },
-  { id: '4', name: 'Interview Preparation', href: '/doctor-onboarding/interview' },
-  { id: '5', name: 'HR Review and Approval', href: '/doctor-onboarding/review' },
-  { id: '6', name: 'Document Signing', href: '/doctor-onboarding/signing' },
+  "Professional Profile",
+  "Document Submission",
+  "Referee Submission",
+  "Interview Preparation",
+  "HR Review and Approval",
+  "Document Signing",
 ];
 
 const DoctorOnboarding = () => {
-  const location = useLocation();
-  const [doctorStatus, setDoctorStatus] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
 
-  useEffect(() => {
-    const fetchDoctorStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: doctor, error } = await supabase
-          .from('doctors')
-          .select('status')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (doctor) {
-          setDoctorStatus(doctor.status);
-        }
-      }
-      setLoading(false);
-    };
+  const handleNext = () => {
+    if (currentStep < steps.length) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
 
-    fetchDoctorStatus();
-  }, []);
+  const handlePrev = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
-  if (loading) {
-    return <div>Loading...</div>; // Or a proper loader
-  }
+  const handleSubmit = async () => {
+    if (!user) {
+      toast({ title: "Authentication error", description: "Could not find user.", variant: "destructive" });
+      return;
+    }
 
-  if (doctorStatus === 'approved') {
-    return <Navigate to="/doctor/dashboard" />
-  }
+    // In a real application, you would gather all the data from the previous steps
+    // and send it to your backend here.
 
-  const getStepStatus = (stepHref: string) => {
-    const stepIndex = steps.findIndex(s => s.href === stepHref);
-    const statusIndex = steps.findIndex(s => `/doctor-onboarding/${doctorStatus?.replace('pending_', '')}`.startsWith(s.href));
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_onboarded: true })
+      .eq("id", user.id);
 
-    if (stepIndex < statusIndex) return 'Completed';
-    if (stepIndex === statusIndex) return 'In Progress';
-    return 'Pending';
-  }
+    if (error) {
+      toast({ title: "Onboarding Failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profile Complete!", description: "Redirecting to your dashboard..." });
+      navigate("/dashboard");
+    }
+  };
 
-  const currentStepIndex = steps.findIndex(step => location.pathname.startsWith(step.href));
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <ProfessionalProfile onNext={handleNext} />;
+      case 2:
+        return <DocumentSubmission onNext={handleNext} onPrev={handlePrev} />;
+      case 3:
+        return <RefereeSubmission onNext={handleNext} onPrev={handlePrev} />;
+      case 4:
+        return <InterviewPreparation onNext={handleNext} onPrev={handlePrev} />;
+      case 5:
+        return <HrReview onNext={handleNext} onPrev={handlePrev} />;
+      case 6:
+        return <DocumentSigning onPrev={handlePrev} />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="flex min-h-screen bg-muted/40">
-      <div className="w-1/4 bg-white p-8 border-r">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold">Your Progress</h2>
-          <p className="text-muted-foreground">Check your progress and review the things.</p>
-        </div>
-        <nav>
-          <ul className="space-y-4">
-            {steps.map((step, index) => {
-              const status = getStepStatus(step.href);
-              return (
-                <li key={step.id}>
-                  <div className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 ${status === 'Completed' ? 'bg-primary text-white' : 'bg-gray-200'}`}>
-                      {step.id}
-                    </div>
-                    <div>
-                      <p className={`font-semibold ${status !== 'Pending' ? 'text-primary' : 'text-gray-500'}`}>{step.name}</p>
-                      <p className={`text-sm ${status === 'In Progress' ? 'text-blue-500' : 'text-muted-foreground'}`}>
-                        {status}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              )
-            })          }
-          </ul>
-        </nav>
-      </div>
-      <div className="w-3/4 p-8">
-        <Outlet />
-      </div>
-    </div>
+    <Card className="w-full max-w-4xl shadow-lg">
+      <CardHeader>
+        <CardTitle className="text-center text-2xl font-bold">Doctor Onboarding</CardTitle>
+        <Stepper currentStep={currentStep} steps={steps} />
+      </CardHeader>
+      <CardContent>
+        {renderStep()}
+      </CardContent>
+    </Card>
   );
 };
 

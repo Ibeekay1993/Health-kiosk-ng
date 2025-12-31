@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ import { ReloadIcon, ArrowRightIcon, ArrowLeftIcon, PersonIcon, CheckIcon } from
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { FcGoogle } from "react-icons/fc";
+import useAuth from "@/hooks/useAuth";
 
 // Define the available roles
 type Role = "patient" | "doctor" | "vendor";
@@ -48,6 +49,13 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { session } = useAuth();
+
+  useEffect(() => {
+    if (session) {
+      navigate("/dashboard");
+    }
+  }, [session, navigate]);
 
   const handleNextStep = () => {
     if (step === 1 && !role) {
@@ -65,7 +73,7 @@ const RegisterPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -77,18 +85,36 @@ const RegisterPage = () => {
       },
     });
 
-    if (error) {
+    if (signUpError) {
       toast({
         title: "Registration Failed",
-        description: error.message,
+        description: signUpError.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Registration Successful",
-        description: "Please check your email to verify your account.",
+      setLoading(false);
+      return;
+    }
+
+    if (signUpData.user) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      navigate("/login");
+
+      if (signInError) {
+        toast({
+          title: "Login Failed After Registration",
+          description: signInError.message,
+          variant: "destructive",
+        });
+        navigate("/login");
+      } else {
+        toast({
+          title: "Registration Successful",
+          description: "Welcome! Let's complete your profile.",
+        });
+        navigate("/onboarding");
+      }
     }
 
     setLoading(false);
