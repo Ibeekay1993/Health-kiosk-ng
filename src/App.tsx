@@ -25,7 +25,8 @@ import FindKiosk from "./pages/FindKiosk";
 import Prescriptions from "./pages/Prescriptions";
 import VendorSelection from "./pages/VendorSelection";
 import NotFound from "./pages/NotFound";
-import MobileDashboard from "./pages/MobileDashboard";
+import Dashboard from "./pages/Dashboard";
+import PatientDashboard from "./pages/PatientDashboard";
 import Doctors from "./pages/Doctors";
 import Chats from "./pages/Chats";
 import MedicalRecords from "./pages/MedicalRecords";
@@ -40,6 +41,7 @@ import Contact from "./pages/Contact";
 import Consultation from "./pages/Consultation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import Onboarding from "./pages/Onboarding";
 import { DoctorOnboarding, DoctorProfile, DocumentSubmission, RefereeSubmission, InterviewPreparation, DocumentSigning, Review } from "./pages/onboarding";
 
 const queryClient = new QueryClient();
@@ -68,7 +70,8 @@ const App = () => (
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route element={<DashboardLayout />}>
-                <Route path="/dashboard" element={<MobileDashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/patient-dashboard" element={<PatientDashboard />} />
                 <Route path="/appointments" element={<Appointments />} />
                 <Route path="/chat" element={<Chats />} />
                 <Route path="/chat/:id" element={<Chat />} />
@@ -81,6 +84,7 @@ const App = () => (
                 <Route path="/find-kiosk" element={<FindKiosk />} />
                 <Route path="/consultation" element={<Consultation />} />
               </Route>
+              <Route path="/onboarding" element={<Onboarding />} />
             </Route>
             
             {/* Doctor Onboarding */}

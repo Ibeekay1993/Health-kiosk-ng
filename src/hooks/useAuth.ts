@@ -1,31 +1,91 @@
 
-import { useState, useEffect } from "react";
-import { Session } from "@supabase/supabase-js";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
+import { Profile } from "@/types";
 
 export const useAuth = () => {
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
+  const fetchProfile = useCallback(async (user: User) => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*, doctors(*)")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      if (profileData) {
+        // Supabase can return 'doctors' as an array or an object. We handle both.
+        const doctorInfo = Array.isArray(profileData.doctors)
+          ? profileData.doctors[0]
+          : profileData.doctors;
+
+        // Combine data from both tables into a single Profile object
+        const combinedProfile: Profile = {
+          ...profileData,
+          ...(doctorInfo || {}),
+        };
+
+        // The original 'doctors' property is redundant if its data is merged.
+        delete combinedProfile.doctors;
+
+        setProfile(combinedProfile);
+      } else {
+        // Handle case where no profile is found for the user
+        setProfile(null);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
       setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        const currentUser = session?.user;
+        setUser(currentUser ?? null);
+
+        if (currentUser) {
+          await fetchProfile(currentUser);
+        } else {
+            setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error fetching session:", error);
+        setLoading(false);
+      }
     };
 
-    getSession();
+    fetchSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
+      async (_event, session) => {
+        const currentUser = session?.user;
+        setUser(currentUser ?? null);
+
+        if (currentUser) {
+          await fetchProfile(currentUser);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
       }
     );
 
     return () => {
-      authListener.subscription.unsubscribe();
+      authListener?.subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
-  return { session, loading };
+  return { user, profile, loading };
 };

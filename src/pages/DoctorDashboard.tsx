@@ -2,8 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, Calendar, Users, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const DoctorDashboard = () => {
+  const { profile, loading } = useAuth();
+
   const features = [
     {
       title: "Patient Records",
@@ -31,12 +34,16 @@ const DoctorDashboard = () => {
     },
   ];
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-muted/40 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Doctor's Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, Doctor. Here's your overview.</p>
+          <p className="text-muted-foreground">Welcome back, Dr. {profile?.full_name || 'Doctor'}. Here's your overview.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

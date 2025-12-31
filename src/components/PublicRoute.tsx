@@ -4,14 +4,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { FC } from "react";
 
 const PublicRoute: FC = () => {
-  const { session, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return <div>Loading...</div>; 
   }
 
-  if (session) {
-    return <Navigate to="/dashboard" replace />;
+  if (user) {
+    if (profile?.role === 'doctor') {
+      return <Navigate to="/doctor-dashboard" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return <Outlet />;

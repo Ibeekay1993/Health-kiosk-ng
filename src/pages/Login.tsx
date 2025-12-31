@@ -6,8 +6,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ReloadIcon } from "@radix-ui/react-icons";
+import { FcGoogle } from "react-icons/fc";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -34,7 +35,7 @@ const LoginPage = () => {
     } else {
       toast({
         title: "Login Successful",
-        description: "Welcome back!",
+        description: "Welcome back! Redirecting you to your dashboard...",
       });
       navigate("/dashboard");
     }
@@ -42,27 +43,42 @@ const LoginPage = () => {
     setLoading(false);
   };
 
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+
+    if (error) {
+      toast({
+        title: "Google Sign-in Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 rounded-2xl shadow-2xl overflow-hidden bg-card">
+    <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 rounded-2xl shadow-xl overflow-hidden">
         
-        {/* Left Side: Welcome Message & Image */}
+        {/* Left Side: Illustration and Welcome Message */}
         <div className="hidden md:flex flex-col justify-center items-center p-12 bg-primary/10 text-center">
-          <img src="./img/illustrations/login-vector.svg" alt="Healthcare Illustration" className="w-full max-w-xs mx-auto mb-8" />
+          <img src="/img/illustrations/login-vector.svg" alt="A doctor attending to a patient" className="w-full max-w-sm mx-auto mb-8" />
           <h2 className="text-3xl font-bold text-foreground mb-2">Welcome Back!</h2>
-          <p className="text-muted-foreground">Log in to access your personalized health dashboard and services.</p>
+          <p className="text-muted-foreground">Log in to access your personalized health dashboard.</p>
         </div>
 
         {/* Right Side: Login Form */}
-        <div className="p-8 md:p-12">
+        <div className="bg-card p-8 md:p-12">
           <Card className="border-0 shadow-none">
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold">Login</CardTitle>
+              <CardTitle className="text-2xl font-bold">Log In to Your Account</CardTitle>
+              <CardDescription>Enter your credentials to continue</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleLogin} className="space-y-6">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
@@ -92,15 +108,27 @@ const LoginPage = () => {
                   {loading ? <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> : "Log In"}
                 </Button>
               </form>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <Button variant="outline" className="w-full" onClick={handleGoogleLogin}>
+                <FcGoogle className="mr-2 h-5 w-5" />
+                Sign in with Google
+              </Button>
+
               <div className="mt-6 text-center text-sm">
                 Don't have an account?{" "}
                 <Link to="/register" className="font-semibold text-primary hover:underline">
-                  Sign Up
-                </Link>
-              </div>
-              <div className="mt-4 text-center text-sm">
-                <Link to="/" className="text-muted-foreground hover:text-primary">
-                  &larr; Back to Home
+                  Create one now
                 </Link>
               </div>
             </CardContent>
