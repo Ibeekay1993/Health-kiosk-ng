@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import useAuth from "@/hooks/useAuth";
 
 const DoctorDashboard = () => {
-  const { profile, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   // Mock data - in a real app, this would come from an API
   const upcomingAppointments = [
@@ -36,7 +36,7 @@ const DoctorDashboard = () => {
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Welcome, Dr. {profile?.full_name || 'Doctor'}!</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Welcome, Dr. {user?.user_metadata.full_name || 'Doctor'}!</h1>
             <p className="text-muted-foreground">Here’s a snapshot of your day.</p>
           </div>
           <Button asChild>

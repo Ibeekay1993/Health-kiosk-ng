@@ -4,7 +4,7 @@ import useAuth from "@/hooks/useAuth";
 import { FC } from "react";
 
 const ProtectedRoute: FC = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, role, is_onboarded, loading } = useAuth();
 
   if (loading) {
     return <div>Loading...</div>; // Or a spinner component
@@ -15,8 +15,8 @@ const ProtectedRoute: FC = () => {
   }
 
   // Redirect if profile is incomplete
-  if (profile?.status === 'pending_profile') {
-    const onbardingPath = profile.role === 'doctor' ? '/doctor-onboarding/profile' : '/onboarding';
+  if (!is_onboarded) {
+    const onbardingPath = role === 'doctor' ? '/doctor-onboarding/profile' : '/onboarding';
     return <Navigate to={onbardingPath} replace />;
   }
   

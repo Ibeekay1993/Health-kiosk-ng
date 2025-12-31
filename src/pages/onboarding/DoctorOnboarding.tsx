@@ -48,10 +48,9 @@ const DoctorOnboarding = () => {
     // In a real application, you would gather all the data from the previous steps
     // and send it to your backend here.
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_onboarded: true })
-      .eq("id", user.id);
+    const { error } = await supabase.auth.updateUser({
+      data: { is_onboarded: true }
+    });
 
     if (error) {
       toast({ title: "Onboarding Failed", description: error.message, variant: "destructive" });
@@ -74,7 +73,7 @@ const DoctorOnboarding = () => {
       case 5:
         return <HrReview onNext={handleNext} onPrev={handlePrev} />;
       case 6:
-        return <DocumentSigning onPrev={handlePrev} />;
+        return <DocumentSigning onPrev={handlePrev} onSubmit={handleSubmit} />;
       default:
         return null;
     }

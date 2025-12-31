@@ -28,16 +28,15 @@ const PatientOnboarding = () => {
 
     setLoading(true);
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        date_of_birth: dateOfBirth,
-        address,
-        emergency_contact_name: emergencyContactName,
-        emergency_contact_phone: emergencyContactPhone,
-        is_onboarded: true,
-      })
-      .eq("id", user.id);
+    const { error } = await supabase.auth.updateUser({
+        data: {
+            date_of_birth: dateOfBirth,
+            address: address,
+            emergency_contact_name: emergencyContactName,
+            emergency_contact_phone: emergencyContactPhone,
+            is_onboarded: true,
+        }
+    });
 
     if (error) {
       toast({ title: "Onboarding Failed", description: error.message, variant: "destructive" });
