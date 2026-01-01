@@ -1,43 +1,79 @@
+
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Brain, Activity, Shield, Pill, Users } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
+
+const icons = {
+  Heart,
+  Brain,
+  Activity,
+  Shield,
+  Pill,
+  Users,
+};
+
+interface Category {
+  id: string;
+  title: string;
+  icon: keyof typeof icons;
+  color: string;
+  articles: { count: number }[];
+}
+
+interface Article {
+  id: string;
+  title: string;
+  excerpt: string;
+  read_time: string;
+  health_education_categories: {
+    title: string;
+  };
+}
 
 const HealthEducation = () => {
-  const categories = [
-    { icon: Heart, title: "Preventive Health", color: "text-primary", articles: 12 },
-    { icon: Brain, title: "Mental Health", color: "text-secondary", articles: 8 },
-    { icon: Activity, title: "Chronic Illness", color: "text-primary", articles: 15 },
-    { icon: Shield, title: "Wellness Tips", color: "text-secondary", articles: 20 },
-    { icon: Pill, title: "Medication Guide", color: "text-primary", articles: 10 },
-    { icon: Users, title: "Community Health", color: "text-secondary", articles: 6 },
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const articles = [
-    {
-      title: "Understanding Hypertension",
-      category: "Chronic Illness",
-      excerpt: "Learn about blood pressure management and lifestyle changes...",
-      readTime: "5 min read"
-    },
-    {
-      title: "Mental Health Awareness",
-      category: "Mental Health",
-      excerpt: "Breaking the stigma around mental health in Nigeria...",
-      readTime: "7 min read"
-    },
-    {
-      title: "Diabetes Prevention",
-      category: "Preventive Health",
-      excerpt: "Simple steps to reduce your risk of type 2 diabetes...",
-      readTime: "6 min read"
-    },
-    {
-      title: "Proper Medication Use",
-      category: "Medication Guide",
-      excerpt: "How to safely take and store your medications...",
-      readTime: "4 min read"
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('health_education_categories')
+          .select('*, articles:health_education_articles(count)');
+
+        if (categoriesError) throw categoriesError;
+        setCategories(categoriesData || []);
+
+        const { data: articlesData, error: articlesError } = await supabase
+          .from('health_education_articles')
+          .select('*, health_education_categories(title)');
+
+        if (articlesError) throw articlesError;
+        setArticles(articlesData || []);
+
+      } catch (error: any) {
+        console.error('Error fetching health education data:', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const renderIcon = (iconName: keyof typeof icons) => {
+    const Icon = icons[iconName];
+    return Icon ? <Icon className={`h-12 w-12 text-primary mx-auto mb-3`} /> : null;
+  };
+
+  if (loading) {
+    return <div>Loading...</div>; // Or a more sophisticated loading state
+  }
 
   return (
     <div className="min-h-screen bg-muted/40 p-4 md:p-8">
@@ -49,14 +85,13 @@ const HealthEducation = () => {
 
         {/* Categories */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-12">
-          {categories.map((cat, index) => {
-            const Icon = cat.icon;
+          {categories.map((cat) => {
             return (
-              <Card key={index} className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Card key={cat.id} className="cursor-pointer hover:shadow-lg transition-shadow">
                 <CardContent className="p-6 text-center">
-                  <Icon className={`h-12 w-12 ${cat.color} mx-auto mb-3`} />
+                  {renderIcon(cat.icon)}
                   <h3 className="font-semibold text-sm mb-1">{cat.title}</h3>
-                  <p className="text-xs text-muted-foreground">{cat.articles} articles</p>
+                  <p className="text-xs text-muted-foreground">{cat.articles[0].count} articles</p>
                 </CardContent>
               </Card>
             );
@@ -67,12 +102,12 @@ const HealthEducation = () => {
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-6">Featured Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {articles.map((article, index) => (
-              <Card key={index} className="cursor-pointer hover:shadow-lg transition-shadow">
+            {articles.map((article) => (
+              <Card key={article.id} className="cursor-pointer hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline">{article.category}</Badge>
-                    <span className="text-xs text-muted-foreground">{article.readTime}</span>
+                    <Badge variant="outline">{article.health_education_categories.title}</Badge>
+                    <span className="text-xs text-muted-foreground">{article.read_time}</span>
                   </div>
                   <CardTitle className="text-xl">{article.title}</CardTitle>
                 </CardHeader>

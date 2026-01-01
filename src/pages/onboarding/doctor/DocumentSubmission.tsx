@@ -1,22 +1,42 @@
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import FileUpload from "@/components/ui/FileUpload";
 
-const DocumentSubmission = ({ onNext, onPrev }: { onNext: () => void, onPrev: () => void }) => {
+interface DocumentSubmissionProps {
+  data: {
+    medicalLicense: File[];
+    cv: File[];
+  };
+  updateData: (data: Partial<DocumentSubmissionProps['data']>) => void;
+  onNext: () => void;
+  onPrev: () => void;
+}
+
+const DocumentSubmission = ({ data, updateData, onNext, onPrev }: DocumentSubmissionProps) => {
+
+  const handleFilesChange = (fileKey: keyof DocumentSubmissionProps['data']) => (files: File[]) => {
+    updateData({ [fileKey]: files });
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="medical-license">Medical License</Label>
-        <Input id="medical-license" type="file" />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="cv">CV/Resume</Label>
-        <Input id="cv" type="file" />
-      </div>
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onPrev}>Previous</Button>
-        <Button onClick={onNext}>Next</Button>
+    <div className="space-y-6">
+        <FileUpload 
+            label="Medical License" 
+            onFilesChange={handleFilesChange('medicalLicense')} 
+            accept={[".pdf, .png, .jpg"]}
+            maxSize={5 * 1024 * 1024} // 5MB
+        />
+
+        <FileUpload 
+            label="CV/Resume" 
+            onFilesChange={handleFilesChange('cv')} 
+            accept={[".pdf, .doc, .docx"]}
+            maxSize={5 * 1024 * 1024} // 5MB
+        />
+        
+        <div className="flex justify-between pt-4">
+            <Button variant="outline" onClick={onPrev}>Previous</Button>
+            <Button onClick={onNext}>Next</Button>
       </div>
     </div>
   );

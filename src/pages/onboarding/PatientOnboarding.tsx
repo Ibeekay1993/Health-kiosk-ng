@@ -1,111 +1,113 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ReloadIcon } from "@radix-ui/react-icons";
-import useAuth from "@/hooks/useAuth";
+
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import useAuth from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const PatientOnboarding = () => {
-  const { user } = useAuth();
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [address, setAddress] = useState("");
-  const [emergencyContactName, setEmergencyContactName] = useState("");
-  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-  const navigate = useNavigate();
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [dateOfBirth, setDateOfBirth] = useState('');
+    const [sexAtBirth, setSexAtBirth] = useState('');
+    const [consent, setConsent] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) {
-      toast({ title: "Authentication error", description: "Could not find user.", variant: "destructive" });
-      return;
-    }
-
-    setLoading(true);
-
-    const { error } = await supabase.auth.updateUser({
-        data: {
-            date_of_birth: dateOfBirth,
-            address: address,
-            emergency_contact_name: emergencyContactName,
-            emergency_contact_phone: emergencyContactPhone,
-            is_onboarded: true,
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user) {
+            toast.error("You must be logged in to complete your profile.");
+            return;
         }
-    });
+        if (!consent) {
+            toast.error("You must consent to the processing of your health information to continue.");
+            return;
+        }
 
-    if (error) {
-      toast({ title: "Onboarding Failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Profile Complete!", description: "Redirecting to your dashboard..." });
-      navigate("/dashboard");
-    }
+        setLoading(true);
 
-    setLoading(false);
-  };
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                date_of_birth: dateOfBirth,
+                sex_at_birth: sexAtBirth,
+                consent_to_health_data: true,
+                status: 'active'
+            })
+            .eq('id', user.id);
 
-  return (
-    <Card className="w-full max-w-lg shadow-lg">
-      <CardHeader className="text-center">
-        <CardTitle>Complete Your Patient Profile</CardTitle>
-        <CardDescription>Please provide your personal details to get started.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="dob">Date of Birth</Label>
-            <Input
-              id="dob"
-              type="date"
-              value={dateOfBirth}
-              onChange={(e) => setDateOfBirth(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              type="text"
-              placeholder="123 Main St, Anytown USA"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="emergency-name">Emergency Contact Name</Label>
-            <Input
-              id="emergency-name"
-              type="text"
-              placeholder="Jane Doe"
-              value={emergencyContactName}
-              onChange={(e) => setEmergencyContactName(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="emergency-phone">Emergency Contact Phone</Label>
-            <Input
-              id="emergency-phone"
-              type="tel"
-              placeholder="+1 (555) 987-6543"
-              value={emergencyContactPhone}
-              onChange={(e) => setEmergencyContactPhone(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> : "Complete Profile"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
+        setLoading(false);
+
+        if (error) {
+            toast.error("Failed to save profile", { description: error.message });
+        } else {
+            toast.success("Profile completed successfully!");
+            navigate('/dashboard');
+        }
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-muted/40 p-4">
+            <Card className="w-full max-w-lg">
+                <CardHeader>
+                    <CardTitle className="text-2xl">Complete Your Patient Profile</CardTitle>
+                    <CardDescription>
+                        Please provide a few essential details to complete your profile.
+                    </CardDescription>
+                </CardHeader>
+                <form onSubmit={handleSubmit}>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="date_of_birth">Date of Birth</Label>
+                            <Input id="date_of_birth" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="sex_at_birth">Sex at Birth</Label>
+                            <Select onValueChange={setSexAtBirth} value={sexAtBirth} required>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select your sex at birth" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="female">Female</SelectItem>
+                                    <SelectItem value="male">Male</SelectItem>
+                                    <SelectItem value="intersex">Intersex</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground pt-1">
+                                This information is used for clinical safety and helps us provide you with the best care.
+                            </p>
+                        </div>
+                        <div className="items-top flex space-x-2 pt-2">
+                            <Checkbox id="consent" checked={consent} onCheckedChange={(checked) => setConsent(checked as boolean)} />
+                            <div className="grid gap-1.5 leading-none">
+                                <label
+                                    htmlFor="consent"
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                    Consent to Health Information
+                                </label>
+                                <p className="text-sm text-muted-foreground">
+                                    I consent to the collection and processing of my health information.
+                                </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <Button type="submit" className="w-full" disabled={loading || !consent}>
+                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Complete Profile"}
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Card>
+        </div>
+    );
 };
 
 export default PatientOnboarding;

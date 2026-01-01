@@ -41,8 +41,7 @@ import Contact from "./pages/Contact";
 import Consultation from "./pages/Consultation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
-import Onboarding from "./pages/Onboarding";
-import { DoctorOnboarding, DoctorProfile, DocumentSubmission, RefereeSubmission, InterviewPreparation, DocumentSigning, Review } from "./pages/onboarding";
+import OnboardingPage from "./pages/OnboardingPage";
 
 const queryClient = new QueryClient();
 
@@ -84,17 +83,7 @@ const App = () => (
                 <Route path="/find-kiosk" element={<FindKiosk />} />
                 <Route path="/consultation" element={<Consultation />} />
               </Route>
-              <Route path="/onboarding" element={<Onboarding />} />
-            </Route>
-            
-            {/* Doctor Onboarding */}
-            <Route path="/doctor-onboarding" element={<DoctorOnboarding />}>
-              <Route path="profile" element={<DoctorProfile />} />
-              <Route path="documents" element={<DocumentSubmission />} />
-              <Route path="referees" element={<RefereeSubmission />} />
-              <Route path="interview" element={<InterviewPreparation />} />
-              <Route path="review" element={<Review />} />
-              <Route path="signing" element={<DocumentSigning />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
             </Route>
 
             {/* Other routes */}

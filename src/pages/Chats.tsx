@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +12,7 @@ interface Conversation {
   last_message: string;
   last_message_at: string;
   other_party_name: string;
-  other_party_avatar: string;
+  other_party_avatar: string | null;
   other_party_role: 'ai' | 'doctor';
 }
 
@@ -70,7 +71,7 @@ const Chats = () => {
               last_message: lastMessage?.message || "Consultation started.",
               last_message_at: lastMessage ? formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true }) : formatDistanceToNow(new Date(convo.created_at), { addSuffix: true }),
               other_party_name: isDoctorAssigned ? convo.doctor.full_name : "AI Health Assistant",
-              other_party_avatar: isDoctorAssigned ? convo.doctor.avatar_url || "/placeholder-user.jpg" : "/placeholder-bot.jpg",
+              other_party_avatar: isDoctorAssigned ? convo.doctor.avatar_url : null,
               other_party_role: isDoctorAssigned ? 'doctor' : 'ai',
             };
           })
@@ -121,7 +122,7 @@ const Chats = () => {
             <Card key={convo.id} id={`conversation-card-${convo.id}`} className="cursor-pointer hover:bg-muted/50" onClick={() => handleConversationClick(convo)}>
                 <CardContent className="flex items-center gap-4 p-4">
                     <Avatar id={`conversation-avatar-${convo.id}`} className="h-12 w-12">
-                        <AvatarImage src={convo.other_party_avatar} />
+                        <AvatarImage src={convo.other_party_avatar || undefined} />
                         <AvatarFallback>
                             {convo.other_party_role === 'ai' ? <Bot className="h-6 w-6"/> : <Stethoscope className="h-6 w-6"/>}
                         </AvatarFallback>

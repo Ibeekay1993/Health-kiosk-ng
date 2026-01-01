@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,7 +34,7 @@ const Consultation = () => {
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [doctorName, setDoctorName] = useState("");
+  const [doctor, setDoctor] = useState<{id: string, full_name: string} | null>(null);
   const [consultationId, setConsultationId] = useState<string | null>(consultationIdFromUrl);
   const [userId, setUserId] = useState<string | null>(null);
   const [patientId, setPatientId] = useState<string | null>(null);
@@ -63,12 +64,14 @@ const Consultation = () => {
           .select(`
             status,
             patient_id,
+            doctor:doctors(id, full_name),
             chat_messages(id, message, sender_type, created_at)
           `)
           .eq('id', consultationIdFromUrl)
           .single<{
             status: string;
             patient_id: string | null;
+            doctor: { id: string; full_name: string } | null;
             chat_messages: {
               id: string;
               message: string;
@@ -83,6 +86,7 @@ const Consultation = () => {
         }
         
         setPatientId(data.patient_id);
+        setDoctor(data.doctor);
 
         const chatMessages = data.chat_messages.map((msg) => ({
             id: msg.id,
@@ -191,7 +195,7 @@ const Consultation = () => {
       ]);
 
       if (data.connectToDoctor || data.severity === "high") {
-        await handleDoctorHandoff(currentInput, data.severity || "medium");
+        await handleDoctorHandoff();
       }
 
     } catch (error) {
@@ -205,10 +209,27 @@ const Consultation = () => {
     }
   };
 
-  const handleDoctorHandoff = async (symptoms: string, severity: string) => {
+  const handleDoctorHandoff = async () => {
     if (!consultationId) return;
 
-    await supabase.from('consultations').update({ status: 'escalated' }).eq('id', consultationId);
+    // Find an available doctor
+    const { data: doctors, error: doctorError } = await supabase
+        .from('doctors')
+        .select('id, full_name')
+        .limit(1); // In a real scenario, you'd have a system to find an available doctor.
+
+    if (doctorError || !doctors || doctors.length === 0) {
+        toast({ title: 'Could not find an available doctor', variant: 'destructive' });
+        return;
+    }
+    
+    const assignedDoctor = doctors[0];
+    setDoctor(assignedDoctor);
+
+    await supabase.from('consultations').update({ 
+        status: 'escalated',
+        doctor_id: assignedDoctor.id
+    }).eq('id', consultationId);
     
     const { data, error } = await supabase.functions.invoke('create-video-call', {
         body: { consultationId },
@@ -224,7 +245,7 @@ const Consultation = () => {
 
     const handoffMessage: Message = {
       id: (Date.now() + 2).toString(),
-      text: "I’m connecting you with a doctor to assist further.",
+      text: `I’m connecting you with Dr. ${assignedDoctor.full_name} to assist further.`,
       sender: "ai",
       timestamp: new Date(),
     };
@@ -234,7 +255,7 @@ const Consultation = () => {
       setStage('doctor_chat');
       const doctorMessage: Message = {
         id: (Date.now() + 3).toString(),
-        text: "Hello, I'm Dr. Smith. I've reviewed your conversation with the AI assistant. How can I help you further?",
+        text: `Hello, I'm Dr. ${assignedDoctor.full_name}. I've reviewed your conversation with the AI assistant. How can I help you further?`,
         sender: "doctor",
         timestamp: new Date(),
       };
@@ -243,7 +264,7 @@ const Consultation = () => {
   };
 
   const handleWritePrescription = () => {
-    navigate("/prescriptions", { state: { consultation_id: consultationId, patient_id: patientId } });
+    navigate("/prescriptions", { state: { consultation_id: consultationId, patient_id: patientId, doctor_id: doctor?.id } });
   };
 
   return (
@@ -259,8 +280,8 @@ const Consultation = () => {
                   <div>
                     <h2 id="consultation-header-title" className="text-lg font-semibold">
                       {stage === 'ai_assistant' && 'AI Health Assistant'}
-                      {stage === 'doctor_chat' && 'Dr. Smith'}
-                      {stage === 'video_call' && 'Video Call with Dr. Smith'}
+                      {stage === 'doctor_chat' && (doctor ? `Dr. ${doctor.full_name}` : 'Connecting to doctor...')}
+                      {stage === 'video_call' && (doctor ? `Video Call with Dr. ${doctor.full_name}` : 'Connecting to doctor...')}
                     </h2>
                     <p id="consultation-header-status" className="text-sm opacity-90">Online</p>
                   </div>
@@ -274,6 +295,7 @@ const Consultation = () => {
                         variant="outline" 
                         className="bg-white text-primary hover:bg-white/90" 
                         onClick={() => setStage('video_call')}
+                        disabled={!videoRoomUrl}
                       >
                         <Video className="h-4 w-4 mr-2" />
                         Start Video Call

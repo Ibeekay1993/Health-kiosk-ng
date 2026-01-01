@@ -3,17 +3,58 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProfile } from "@/hooks/use-profile";
-import { Bell, Calendar, FileText, Home, MessageSquare, PlusCircle, Search } from "lucide-react";
+import { Bell, Calendar, FileText, Home, MessageSquare, PlusCircle, Search, Clock, Video } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 const MobileDashboard = () => {
   const navigate = useNavigate();
-  const { profile, loading } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const { toast } = useToast();
+  const [greeting, setGreeting] = useState("");
+  const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
+  const [hasNotifications, setHasNotifications] = useState(false); // Placeholder for notification state
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  useEffect(() => {
+    const getGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour < 12) return "Good morning";
+      if (hour < 18) return "Good afternoon";
+      return "Good evening";
+    };
+    setGreeting(getGreeting());
+
+    const fetchUpcomingAppointments = async () => {
+      if (!profile) return;
+      setAppointmentsLoading(true);
+      try {
+        const { data, error } = await supabase.rpc('get_upcoming_appointments', { p_patient_id: profile.id });
+        if (error) throw error;
+        setUpcomingAppointments(data || []);
+      } catch (error: any) {
+        // Silently fail is better than showing a toast here
+        console.error("Error fetching upcoming appointments:", error);
+      }
+      finally {
+        setAppointmentsLoading(false);
+      }
+    };
+
+    if (profile) {
+        fetchUpcomingAppointments();
+        // In a real app, you would also fetch notification status
+        // For now, we just simulate it
+        setHasNotifications(true);
+    }
+
+  }, [profile]);
+
+  if (profileLoading) {
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   const isProfileComplete = profile && profile.full_name && profile.date_of_birth;
@@ -47,14 +88,15 @@ const MobileDashboard = () => {
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12 border-2 border-white">
               <AvatarImage src={profile?.avatar_url ?? undefined} alt={profile?.full_name ?? "User avatar"} />
-              <AvatarFallback>{profile?.full_name?.charAt(0) || 'I'}</AvatarFallback>
+              <AvatarFallback>{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-muted-foreground text-sm">Hello,</p>
-              <h1 className="font-bold text-xl">{profile?.full_name || 'Ibukun Afolayan'}</h1>
+              <p className="text-muted-foreground text-sm">{greeting},</p>
+              <h1 className="font-bold text-xl">{profile?.full_name || 'User'}</h1>
             </div>
           </div>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="relative">
+            {hasNotifications && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />} 
             <Bell className="h-6 w-6" />
           </Button>
         </header>
@@ -95,11 +137,44 @@ const MobileDashboard = () => {
           <CardHeader>
             <CardTitle className="text-lg">Upcoming Appointments</CardTitle>
           </CardHeader>
-          <CardContent className="text-center flex flex-col items-center">
-            <p className="text-muted-foreground mb-4">No upcoming appointments.</p>
-            <Button onClick={() => navigate("/appointments")} className="bg-cyan-500 w-2/3 text-white hover:bg-cyan-600">
-              View All
-            </Button>
+          <CardContent>
+             {appointmentsLoading ? (
+                <div className="flex justify-center items-center py-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : upcomingAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingAppointments.map((apt) => (
+                  <div key={apt.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-10 w-10">
+                            <AvatarImage src={apt.doctor_avatar ?? undefined} />
+                            <AvatarFallback>{apt.doctor_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-semibold">Dr. {apt.doctor_name}</p>
+                            <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                <span>{new Date(apt.appointment_date).toLocaleDateString()} at {new Date(`1970-01-01T${apt.appointment_time}Z`).toLocaleTimeString([], {timeZone: 'UTC', hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => toast.info("Video call feature coming soon!")}>
+                        <Video className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                 {upcomingAppointments.length > 0 &&
+                    <Button onClick={() => navigate("/appointments")} className="w-full mt-2">
+                        View All
+                    </Button>}
+              </div>
+            ) : (
+                <div className="text-center flex flex-col items-center py-4">
+                    <p className="text-muted-foreground mb-4">No upcoming appointments.</p>
+                    <Button onClick={() => navigate("/appointments")} className="w-2/3">
+                        Book Now
+                    </Button>
+                </div>
+            )}
           </CardContent>
         </Card>
 

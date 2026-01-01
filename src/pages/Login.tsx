@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ReloadIcon } from "@radix-ui/react-icons";
+import { ReloadIcon, EyeClosedIcon, EyeOpenIcon } from "@radix-ui/react-icons";
 import { FcGoogle } from "react-icons/fc";
 import useAuth from "@/hooks/useAuth";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -49,7 +50,6 @@ const LoginPage = () => {
         title: "Login Successful",
         description: "Welcome back!",
       });
-      // The useEffect will handle redirection.
     }
 
     setLoading(false);
@@ -71,23 +71,21 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 rounded-2xl shadow-xl overflow-hidden">
+      <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 rounded-2xl shadow-xl overflow-hidden bg-card">
         
-        {/* Left Side: Illustration and Welcome Message */}
-        <div className="hidden md:flex flex-col justify-center items-center p-12 bg-primary/10 text-center">
+        <div className="hidden md:flex flex-col justify-center items-center p-12 bg-primary/10 text-center border-r border-border">
           <img src="/img/illustrations/login-vector.svg" alt="A doctor attending to a patient" className="w-full max-w-sm mx-auto mb-8" />
           <h2 className="text-3xl font-bold text-foreground mb-2">Welcome Back!</h2>
           <p className="text-muted-foreground">Log in to access your personalized health dashboard.</p>
         </div>
 
-        {/* Right Side: Login Form */}
-        <div className="bg-card p-8 md:p-12">
-          <Card className="border-0 shadow-none">
-            <CardHeader className="text-center">
+        <div className="p-8 md:p-12">
+          <Card className="border-0 shadow-none bg-transparent">
+            <CardHeader className="text-center px-0">
               <CardTitle className="text-2xl font-bold">Log In to Your Account</CardTitle>
               <CardDescription>Enter your credentials to continue</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-0">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
@@ -98,9 +96,10 @@ const LoginPage = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="bg-muted/50 focus:bg-background"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
                     <Link to="/forgot-password" className="text-sm text-primary hover:underline">
@@ -109,14 +108,24 @@ const LoginPage = () => {
                   </div>
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="bg-muted/50 focus:bg-background pr-10"
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-8 h-7 w-7 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOpenIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
+                  </Button>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full !mt-6" disabled={loading}>
                   {loading ? <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> : "Log In"}
                 </Button>
               </form>
@@ -137,7 +146,7 @@ const LoginPage = () => {
                 Sign in with Google
               </Button>
 
-              <div className="mt-6 text-center text-sm">
+              <div className="mt-6 text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}
                 <Link to="/register" className="font-semibold text-primary hover:underline">
                   Create one now

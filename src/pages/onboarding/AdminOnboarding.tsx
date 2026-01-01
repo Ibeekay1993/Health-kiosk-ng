@@ -5,42 +5,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import useAuth from "@/hooks/useAuth";
 import Stepper from "@/components/ui/stepper";
-import ProfessionalProfile from "./doctor/ProfessionalProfile";
-import DocumentSubmission from "./doctor/DocumentSubmission";
-import RefereeSubmission from "./doctor/RefereeSubmission";
-import InterviewPreparation from "./doctor/InterviewPreparation";
-import HrReview from "./doctor/HrReview";
-import DocumentSigning from "./doctor/DocumentSigning";
+import CompanyProfile from "./admin/CompanyProfile";
+import SubscriptionAndBilling from "./admin/SubscriptionAndBilling";
+import TermsOfService from "./admin/TermsOfService";
+import PlatformSetup from "./admin/PlatformSetup";
 
 const steps = [
-  "Professional Profile",
-  "Document Submission",
-  "Referee Submission",
-  "Interview Preparation",
-  "HR Review and Approval",
-  "Document Signing",
+  "Company Profile",
+  "Subscription and Billing",
+  "Terms of Service",
+  "Platform Setup",
 ];
 
-const initialFormData = {
-    specialty: "",
-    licenseNumber: "",
-    experience: 0,
-    // ... add fields for other steps as we go
-};
-
-const DoctorOnboarding = () => {
+const AdminOnboarding = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState({});
 
-  const updateFormData = (data: Partial<typeof initialFormData>) => {
+  const updateFormData = (data: any) => {
     setFormData(prev => ({ ...prev, ...data }));
   };
 
   const handleNext = () => {
-    // Add validation logic here before proceeding
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     }
@@ -76,17 +64,13 @@ const DoctorOnboarding = () => {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <ProfessionalProfile data={formData} updateData={updateFormData} onNext={handleNext} />;
+        return <CompanyProfile data={formData} updateData={updateFormData} onNext={handleNext} />;
       case 2:
-        return <DocumentSubmission data={formData} updateData={updateFormData} onNext={handleNext} onPrev={handlePrev} />;
+        return <SubscriptionAndBilling data={formData} updateData={updateFormData} onNext={handleNext} onPrev={handlePrev} />;
       case 3:
-        return <RefereeSubmission data={formData} updateData={updateFormData} onNext={handleNext} onPrev={handlePrev} />;
+        return <TermsOfService data={formData} updateData={updateFormData} onNext={handleNext} onPrev={handlePrev} />;
       case 4:
-        return <InterviewPreparation onNext={handleNext} onPrev={handlePrev} />;
-      case 5:
-        return <HrReview onNext={handleNext} onPrev={handlePrev} />;
-      case 6:
-        return <DocumentSigning onPrev={handlePrev} onSubmit={handleSubmit} />;
+        return <PlatformSetup onPrev={handlePrev} onSubmit={handleSubmit} />;
       default:
         return null;
     }
@@ -100,4 +84,4 @@ const DoctorOnboarding = () => {
   );
 };
 
-export default DoctorOnboarding;
+export default AdminOnboarding;
